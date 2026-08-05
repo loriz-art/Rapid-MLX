@@ -1,6 +1,6 @@
 #!/bin/bash
 # Rapid-MLX installer — AI inference for Apple Silicon
-# Usage: curl -fsSL https://raullenchai.github.io/Rapid-MLX/install.sh | bash
+# Usage: curl -fsSL https://rapidmlx.com/install.sh | bash
 #        curl ... | bash -s 0.4.3          # specific version
 #        curl ... | bash -s latest         # latest from GitHub (pre-release)
 set -euo pipefail
@@ -84,11 +84,33 @@ fi
 
 # ── 2. Detect RAM → recommend model ──────────────────────────────────────────
 
+# These tiers MIRROR ``RAMBucketedDefault.tiers`` in the desktop app
+# (apps/rapid-mac/Sources/Rapid/Server/RAMBucketedDefault.swift), which is
+# the curated table with measured footprints, a capability column and a
+# monotonic-by-RAM invariant guarded by
+# apps/rapid-mac/scripts/verify-recommendation-tiers.swift.
+#
+# They used to disagree — six tiers, one match. Somebody who ran
+# ``curl … | bash`` and then opened the app was told to run two different
+# models on the same Mac, and curl is the canonical entry point in the
+# README. One table, two front doors.
+#
+# The app also surfaces a "fast alternative" per tier; this banner shows a
+# single command, so it takes the app's PRIMARY (smart) pick only.
+#
+# RECOMMENDED_FLAGS carries the tier's launch flags. It is not cosmetic:
+# ``gemma-4-26b-4bit`` at 24 GB needs its vision tower dropped and its KV
+# budget capped, and printing the bare ``serve`` line would hand a 24 GB
+# Mac a command that does not fit in it.
 RAM_GB=$(sysctl -n hw.memsize 2>/dev/null | awk '{printf "%d", $1/1073741824}')
-if   [ "$RAM_GB" -ge 96 ]; then RECOMMENDED_MODEL="qwen3.5-122b-mxfp4"; RAM_TIER="96+ GB"
-elif [ "$RAM_GB" -ge 48 ]; then RECOMMENDED_MODEL="qwen3.5-35b-8bit";  RAM_TIER="48-95 GB"
-elif [ "$RAM_GB" -ge 24 ]; then RECOMMENDED_MODEL="qwen3.5-9b-4bit";   RAM_TIER="24-47 GB"
-else                            RECOMMENDED_MODEL="qwen3.5-4b-4bit";   RAM_TIER="8-23 GB"
+RECOMMENDED_FLAGS=""
+if   [ "$RAM_GB" -ge 96 ]; then RECOMMENDED_MODEL="qwen3.5-122b-mxfp4";  RAM_TIER="96+ GB"
+elif [ "$RAM_GB" -ge 64 ]; then RECOMMENDED_MODEL="qwen3.6-35b-8bit";    RAM_TIER="64-95 GB"
+elif [ "$RAM_GB" -ge 32 ]; then RECOMMENDED_MODEL="qwen3.6-35b-4bit";    RAM_TIER="32-63 GB"
+elif [ "$RAM_GB" -ge 24 ]; then RECOMMENDED_MODEL="gemma-4-26b-4bit";    RAM_TIER="24-31 GB"
+                                RECOMMENDED_FLAGS=" --no-mllm --kv-cache-dtype bf16 --cache-memory-mb 512"
+elif [ "$RAM_GB" -ge 16 ]; then RECOMMENDED_MODEL="bonsai-27b-2bit";     RAM_TIER="16-23 GB"
+else                            RECOMMENDED_MODEL="lfm2.5-2.6b-4bit";    RAM_TIER="8-15 GB"
 fi
 
 dim "macOS $(sw_vers -productVersion) · Apple Silicon · ${RAM_GB} GB RAM"
@@ -192,15 +214,16 @@ esac
 
 mkdir -p "$BIN_DIR"
 
-# Link all CLI entry points
-for cmd in vllm-mlx vllm-mlx-chat vllm-mlx-bench; do
+# Link the Rapid-MLX CLI entry points.
+for cmd in rapid-mlx rapid-mlx-chat rapid-mlx-bench; do
     [ -f "$INSTALL_DIR/bin/$cmd" ] && ln -sf "$INSTALL_DIR/bin/$cmd" "$BIN_DIR/$cmd"
 done
 
-# rapid-mlx aliases
-[ -f "$INSTALL_DIR/bin/vllm-mlx" ]      && ln -sf "$INSTALL_DIR/bin/vllm-mlx"      "$BIN_DIR/rapid-mlx"
-[ -f "$INSTALL_DIR/bin/vllm-mlx-chat" ]  && ln -sf "$INSTALL_DIR/bin/vllm-mlx-chat"  "$BIN_DIR/rapid-mlx-chat"
-[ -f "$INSTALL_DIR/bin/vllm-mlx-bench" ] && ln -sf "$INSTALL_DIR/bin/vllm-mlx-bench" "$BIN_DIR/rapid-mlx-bench"
+# Keep pre-Rapid command aliases available for existing automation.
+for cmd in vllm-mlx vllm-mlx-chat vllm-mlx-bench; do
+    [ -f "$INSTALL_DIR/bin/$cmd" ] && ln -sf "$INSTALL_DIR/bin/$cmd" "$BIN_DIR/$cmd"
+done
+[ -f "$INSTALL_DIR/bin/rmlx" ] && ln -sf "$INSTALL_DIR/bin/rmlx" "$BIN_DIR/rmlx"
 ln -sf "$INSTALL_DIR/bin/python3" "$BIN_DIR/rapid-mlx-python"
 
 # ── 7. Ensure ~/.local/bin is in PATH ────────────────────────────────────────
@@ -226,7 +249,7 @@ fi
 
 # ── 8. Verify + done ────────────────────────────────────────────────────────
 
-VERSION=$("$INSTALL_DIR/bin/vllm-mlx" --version 2>/dev/null || echo "unknown")
+VERSION=$("$INSTALL_DIR/bin/rapid-mlx" --version 2>/dev/null || echo "unknown")
 
 echo ""
 echo "  ╭─────────────────────────────────────╮"
@@ -237,7 +260,7 @@ echo "  ╰───────────────────────
 echo ""
 info "Quick start:"
 echo ""
-echo "    rapid-mlx serve $RECOMMENDED_MODEL"
+echo "    rapid-mlx serve ${RECOMMENDED_MODEL}${RECOMMENDED_FLAGS}"
 echo ""
 dim "Then open a second terminal:"
 echo ""
@@ -245,8 +268,8 @@ echo "    rapid-mlx-chat                                    # built-in chat"
 echo "    OPENAI_BASE_URL=http://localhost:8000/v1 claude    # Claude Code"
 echo "    OPENAI_BASE_URL=http://localhost:8000/v1 aider     # Aider"
 echo ""
-dim "Upgrade:    curl -fsSL https://raullenchai.github.io/Rapid-MLX/install.sh | bash"
-dim "Uninstall:  rm -rf ~/.rapid-mlx ~/.local/bin/rapid-mlx* ~/.local/bin/vllm-mlx*"
+dim "Upgrade:    curl -fsSL https://rapidmlx.com/install.sh | bash"
+dim "Uninstall:  rm -rf ~/.rapid-mlx ~/.rapid-mlx-python ~/.local/bin/rapid-mlx* ~/.local/bin/vllm-mlx*"
 echo ""
 
 if [ "$NEED_PATH_HINT" = true ]; then
