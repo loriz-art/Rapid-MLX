@@ -1384,7 +1384,7 @@ fi
 # release must say so explicitly (RAPID_MLX_OFFICIAL_RELEASE=1, which the
 # release pipeline sets); everything else is a source build and must carry the
 # commit it was built from.
-STAMP="$STAGE/site-packages/vllm_mlx/_build_stamp.json"
+STAMP="$STAGE/site-packages/rapid_mlx/_build_stamp.json"
 OFFICIAL_RELEASE="${RAPID_MLX_OFFICIAL_RELEASE:-0}"
 # Validated here, not just by the writer: this script branches on the value a
 # few lines down, so an unrecognised one would announce "source", build, and
@@ -1396,7 +1396,7 @@ if [[ "$OFFICIAL_RELEASE" != "0" && "$OFFICIAL_RELEASE" != "1" ]]; then
 fi
 SIDECAR_REVISION="$(git -C "$RAPID_MLX_SOURCE" rev-parse HEAD 2>/dev/null || true)"
 # `git diff --quiet HEAD` sees tracked modifications and nothing else. An
-# untracked `vllm_mlx/whatever.py` is copied into site-packages by the install
+# untracked `rapid_mlx/whatever.py` is copied into site-packages by the install
 # step and runs in the packaged app, so a build containing one is NOT the
 # named commit. `status --porcelain` reports tracked edits, staged changes,
 # deletions and untracked files alike; `--untracked-files=normal` keeps
@@ -1485,7 +1485,7 @@ PYTHONNOUSERSITE=1 python3 "$REPO_ROOT/scripts/write-sidecar-stamp.py" \
 # Recompile so the stamped package is consistent with the .pyc set shipped
 # alongside it.
 PYTHONNOUSERSITE=1 "$STAGE/python/bin/python3.12" -m compileall -q \
-    "$STAGE/site-packages/vllm_mlx" >/dev/null 2>&1 || true
+    "$STAGE/site-packages/rapid_mlx" >/dev/null 2>&1 || true
 
 # ----- step 7: package --------------------------------------------------
 

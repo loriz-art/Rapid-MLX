@@ -23,6 +23,11 @@ from typing import Any
 
 import pytest
 
+from rapid_mlx.community_bench import atomic_upload
+from rapid_mlx.community_bench.publication import (
+    describe_withheld,
+    project_run_for_publication,
+)
 from tests.ingestion_contract import (
     IngestionRejected,
     cross_check_against_worker,
@@ -30,12 +35,6 @@ from tests.ingestion_contract import (
     validate_submission,
     worker_source,
 )
-from vllm_mlx.community_bench import atomic_upload
-from vllm_mlx.community_bench.publication import (
-    describe_withheld,
-    project_run_for_publication,
-)
-
 
 #: A record produced by a REAL packaged benchmark run of
 #: ``lfm2.5-1b-4bit`` on this machine, saved verbatim. Its model identity

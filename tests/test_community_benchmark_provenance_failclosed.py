@@ -16,19 +16,19 @@ from __future__ import annotations
 import json
 import os
 import stat
-import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
-from vllm_mlx.community_bench import atomic_upload, cli as community_cli, local_runner
-from vllm_mlx.community_bench.publication import (
+from rapid_mlx.community_bench import atomic_upload
+from rapid_mlx.community_bench import cli as community_cli
+from rapid_mlx.community_bench.publication import (
     PublicationRefused,
     ensure_publishable,
 )
-from vllm_mlx.community_bench.workspace import (
+from rapid_mlx.community_bench.workspace import (
     LocalRunArchive,
     ProvenanceUnreadable,
     validate_provenance,
@@ -130,7 +130,7 @@ def test_the_runner_archives_every_outcome_with_provenance() -> None:
     failure is a publishable result and needs the same build record.
     """
 
-    source = (REPO / "vllm_mlx/community_bench/local_runner.py").read_text()
+    source = (REPO / "rapid_mlx/community_bench/local_runner.py").read_text()
     code = [
         line
         for line in source.splitlines()
@@ -350,7 +350,7 @@ def test_a_failed_outcome_keeps_its_provenance_and_is_refused(
 def test_a_dirty_run_stays_refused_through_the_cli_after_a_clean_rebuild(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from vllm_mlx.community_bench import run_builder
+    from rapid_mlx.community_bench import run_builder
 
     archive = _cli_share(tmp_path, monkeypatch)
     run = _run()

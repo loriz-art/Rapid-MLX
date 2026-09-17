@@ -384,7 +384,7 @@ def _is_packaged_runtime(location: Path) -> bool:
     build stages the same sidecar *inside* this repository:
 
     1. an ancestor ``.app`` bundle, and
-    2. the sidecar's own wrapper layout (``rapid-mlx/site-packages/vllm_mlx``
+    2. the sidecar's own wrapper layout (``rapid-mlx/site-packages/rapid_mlx``
        beside ``rapid-mlx/VERSION``), which ``build-sidecar-tarball.sh``
        produces for both the bundled and runtime-override slots.
     """

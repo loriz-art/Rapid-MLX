@@ -36,7 +36,7 @@ struct CommunityBenchmarkLiveProgressTests {
         return script
     }
 
-    /// The exact shape `vllm_mlx/community_bench/local_runner.py` emits for a
+    /// The exact shape `rapid_mlx/community_bench/local_runner.py` emits for a
     /// two-case text protocol: a load line, a warmup line and five `round N/5`
     /// lines per case, each RS-tagged (`\x1e`, `PROGRESS_TAG` in `cli.py`).
     ///

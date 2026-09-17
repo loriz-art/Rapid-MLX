@@ -47,7 +47,7 @@ SOURCE_OPTIONAL_KEYS = frozenset({"dirty"})
 SOURCE_KEYS = SOURCE_REQUIRED_KEYS | SOURCE_OPTIONAL_KEYS
 
 
-class ProvenanceInvalid(ValueError):
+class ProvenanceInvalid(ValueError):  # noqa: N818 - stable domain error name
     """A provenance document does not satisfy the closed schema."""
 
 

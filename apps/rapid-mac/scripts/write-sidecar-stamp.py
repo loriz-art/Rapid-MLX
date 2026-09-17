@@ -3,7 +3,7 @@
 """Write a packaged sidecar's provenance stamp.
 
 Called by ``build-sidecar.sh``. The stamp is what
-``vllm_mlx.community_bench.run_builder.resolve_provenance`` reads instead of
+``rapid_mlx.community_bench.run_builder.resolve_provenance`` reads instead of
 probing Git at run time, so it has to be right: a benchmark record says which
 build produced it, and a packaged build cannot work that out for itself on a
 user's Mac.
@@ -32,7 +32,7 @@ from pathlib import Path
 #: The closed schema, loaded by path so this script needs no package imports.
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[3]
-    / "vllm_mlx/community_bench/provenance_schema.py"
+    / "rapid_mlx/community_bench/provenance_schema.py"
 )
 
 

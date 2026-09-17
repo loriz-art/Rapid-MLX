@@ -29,7 +29,7 @@ struct CommunityBenchmarkModel: Identifiable, Hashable {
         "flux2-klein-4b", "z-image-turbo", "qwen-image",
         "wan2.2-ti2v-5b-q8"
     ]
-    /// Mirrors `_TASK_PROTOCOL` in `vllm_mlx/community_bench/workspace.py`.
+    /// Mirrors `_TASK_PROTOCOL` in `rapid_mlx/community_bench/workspace.py`.
     static func defaultProtocolID(for task: ModelTask) -> String {
         switch task {
         case .imageGeneration: return "rapid-image-speed"
@@ -321,7 +321,7 @@ struct CommunityBenchmarkUploadPreview: Identifiable {
     ///
     /// The CLI projects the archived record before sending it, because the
     /// ingestion validator allowlists a narrower model identity than a warm
-    /// cache produces (see `vllm_mlx/community_bench/publication.py`). The
+    /// cache produces (see `rapid_mlx/community_bench/publication.py`). The
     /// projection is only honest if the user can see it, so the exact facts —
     /// path, value and the reason each was held back — travel with the preview
     /// and are shown before Publish.
@@ -828,7 +828,7 @@ enum CommunityBenchmarkRunStatus {
 
     /// Record-separator prefix the CLI puts on machine-readable progress
     /// lines under `--json --progress`. Mirrors `PROGRESS_TAG` in
-    /// `vllm_mlx/community_bench/cli.py`.
+    /// `rapid_mlx/community_bench/cli.py`.
     static let progressTag = "\u{1e}"
 
     /// A tagged progress line with its marker removed and whitespace
@@ -1869,7 +1869,7 @@ struct CommunityBenchmarkView: View {
                 model: selected,
                 scope: scope,
                 branch: branch,
-                isRunEnabled: binary != nil && benchmarkCLIAvailable && model.runtimeCanRun,
+                isRunEnabled: binary != nil && benchmarkCLIAvailable && selected.runtimeCanRun,
                 serverImpactNote: serverImpactNote,
                 isNarrow: isNarrow,
                 onRun: startRun,

@@ -201,7 +201,7 @@ struct CommunityRunPlan: Equatable, Sendable {
 ///
 /// `{"event":"plan","task_type":…,"cases":[{"case_id":…,"warmup_rounds":…,
 /// "measured_rounds":…}],"total_passes":…}` — see `_announce_plan` in
-/// `vllm_mlx/community_bench/local_runner.py`.
+/// `rapid_mlx/community_bench/local_runner.py`.
 struct CommunityRunPlanEvent: Decodable, Sendable {
     struct Case: Decodable, Sendable {
         let caseID: String?
@@ -384,7 +384,7 @@ final class CommunityRunProgressBox: @unchecked Sendable {
 
 /// One meaningful thing the CLI reported, parsed out of its human line.
 ///
-/// The progress stream is prose (`vllm_mlx/community_bench/local_runner.py`
+/// The progress stream is prose (`rapid_mlx/community_bench/local_runner.py`
 /// formats it for a terminal), so this is where prose becomes an event. Only
 /// lines that mark real, completed work are events; plan announcements and
 /// estimates are status text and nothing more.

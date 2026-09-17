@@ -20,7 +20,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from vllm_mlx.community_bench import local_runner, run_builder
+from rapid_mlx.community_bench import local_runner, run_builder
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +41,7 @@ def _packaged_sidecar(root: Path) -> Path:
     """The layout `build-sidecar-tarball.sh` produces and `build.sh` copies
     into `Rapid.app/Contents/Resources/rapid-mlx/`."""
 
-    package = root / "rapid-mlx" / "site-packages" / "vllm_mlx" / "community_bench"
+    package = root / "rapid-mlx" / "site-packages" / "rapid_mlx" / "community_bench"
     package.mkdir(parents=True)
     (root / "rapid-mlx" / "VERSION").write_text("0.13.4\n")
     module = package / "run_builder.py"
@@ -79,7 +79,7 @@ def test_packaged_sidecar_inside_a_git_checkout_is_still_a_release(
 def test_module_inside_an_app_bundle_is_a_release(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    package = tmp_path / "Rapid.app" / "Contents" / "Resources" / "lib" / "vllm_mlx"
+    package = tmp_path / "Rapid.app" / "Contents" / "Resources" / "lib" / "rapid_mlx"
     package.mkdir(parents=True)
     module = package / "run_builder.py"
     module.write_text("")
@@ -300,7 +300,7 @@ def test_a_tracked_source_checkout_still_reports_source(
         ]
     )
     (tmp_path / ".git").mkdir()
-    module = tmp_path / "vllm_mlx" / "run_builder.py"
+    module = tmp_path / "rapid_mlx" / "run_builder.py"
     module.parent.mkdir()
     module.write_text("")
     monkeypatch.setattr(
@@ -316,7 +316,7 @@ def test_an_unresolvable_source_checkout_is_an_error_not_a_release(
     build to the published runtime, so this must stay a hard failure."""
 
     (tmp_path / ".git").mkdir()
-    module = tmp_path / "vllm_mlx" / "run_builder.py"
+    module = tmp_path / "rapid_mlx" / "run_builder.py"
     module.parent.mkdir()
     module.write_text("")
 
@@ -427,7 +427,7 @@ def test_execution_config_validates_against_the_contract(
     when a real packaged benchmark finished and was then thrown away.
     """
 
-    from vllm_mlx.catalog.validation import ContractValidator
+    from rapid_mlx.catalog.validation import ContractValidator
 
     if stamp is None:
         monkeypatch.setattr(run_builder, "_BUILD_STAMP", tmp_path / "absent.json")
@@ -444,7 +444,7 @@ def test_execution_config_validates_against_the_contract(
 def test_a_source_runtime_carries_its_revision(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from vllm_mlx.catalog.validation import ContractValidator
+    from rapid_mlx.catalog.validation import ContractValidator
 
     revision = "d" * 40
     monkeypatch.setattr(run_builder, "_BUILD_STAMP", tmp_path / "absent.json")
@@ -550,7 +550,7 @@ def test_a_packaged_build_never_needs_git(
     """A Finder-launched app inherits a bare PATH, and a Mac without the
     command line tools cannot run `git` at all. Neither build kind may care."""
 
-    from vllm_mlx.catalog.validation import ContractValidator
+    from rapid_mlx.catalog.validation import ContractValidator
 
     path = tmp_path / "_build_stamp.json"
     path.write_text(json.dumps(stamp))

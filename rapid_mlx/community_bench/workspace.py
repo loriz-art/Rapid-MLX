@@ -16,13 +16,13 @@ from typing import Any
 
 from rapid_mlx.catalog import build_legacy_catalog_snapshot
 
-from .provenance_schema import ProvenanceInvalid
-from .provenance_schema import validate as validate_provenance_document
 from .benchmark_contracts import (
     BenchmarkRunValidator,
     SubmissionReceiptValidator,
     registered_workload,
 )
+from .provenance_schema import ProvenanceInvalid
+from .provenance_schema import validate as validate_provenance_document
 
 _TASK_PROTOCOL = {
     "text_generation": "rapid-community-speed",
@@ -393,7 +393,7 @@ def plan_for_alias(
     raise ValueError(f"unknown or unsupported benchmark model {alias_name!r}")
 
 
-class ProvenanceUnreadable(RuntimeError):
+class ProvenanceUnreadable(RuntimeError):  # noqa: N818 - stable domain error name
     """A run's build provenance exists but cannot be trusted.
 
     Deliberately distinct from ``None``. ``None`` means the file is not there,

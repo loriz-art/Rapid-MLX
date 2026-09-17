@@ -48,7 +48,7 @@ _PUBLIC_SOURCE_KEYS = ("kind", "repo_id")
 _PUBLIC_QUANTIZATION: dict[str, str] = {"kind": "unknown", "base_dtype": "unknown"}
 
 
-class PublicationRefused(Exception):
+class PublicationRefused(Exception):  # noqa: N818 - stable domain error name
     """This result must not be published, and why.
 
     Distinct from a validation error: the payload could be *made* to validate

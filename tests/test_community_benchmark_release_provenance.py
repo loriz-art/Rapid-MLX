@@ -10,7 +10,7 @@ Three failures lived here together:
    away, so benchmarks measured by modified code published under the clean
    commit's identity.
 3. Dirtiness was detected with ``git diff --quiet HEAD``, which does not see
-   untracked files — and an untracked ``vllm_mlx/*.py`` is copied straight into
+   untracked files — and an untracked ``rapid_mlx/*.py`` is copied straight into
    the packaged site-packages.
 """
 
@@ -18,13 +18,18 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import re
 import subprocess
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from rapid_mlx.community_bench import atomic_upload, run_builder
+from rapid_mlx.community_bench.publication import (
+    PublicationRefused,
+    ensure_publishable,
+)
+from rapid_mlx.community_bench.workspace import LocalRunArchive
 from tests.ingestion_contract import (
     IngestionRejected,
     cross_check_against_worker,
@@ -32,12 +37,6 @@ from tests.ingestion_contract import (
     validate_submission,
     worker_source,
 )
-from vllm_mlx.community_bench import atomic_upload, run_builder
-from vllm_mlx.community_bench.publication import (
-    PublicationRefused,
-    ensure_publishable,
-)
-from vllm_mlx.community_bench.workspace import LocalRunArchive
 
 REPO = Path(__file__).resolve().parents[1]
 ACTION = REPO / ".github/actions/desktop-releasable/action.yml"
@@ -197,7 +196,7 @@ def repo(tmp_path: Path) -> Path:
     subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
     _git(tmp_path, "config", "user.email", "t@example.com")
     _git(tmp_path, "config", "user.name", "T")
-    package = tmp_path / "vllm_mlx"
+    package = tmp_path / "rapid_mlx"
     package.mkdir()
     (package / "__init__.py").write_text("")
     (tmp_path / ".gitignore").write_text("build/\n")
@@ -213,12 +212,12 @@ def test_a_clean_checkout_is_not_dirty(repo: Path) -> None:
 def test_an_untracked_python_module_makes_the_build_dirty(repo: Path) -> None:
     """The case ``git diff --quiet HEAD`` missed entirely.
 
-    An untracked module under ``vllm_mlx/`` is installed into the packaged
+    An untracked module under ``rapid_mlx/`` is installed into the packaged
     site-packages and runs in the shipped app, so the build is not the commit
     it names.
     """
 
-    (repo / "vllm_mlx" / "experimental_patch.py").write_text("SPEEDUP = True\n")
+    (repo / "rapid_mlx" / "experimental_patch.py").write_text("SPEEDUP = True\n")
     # The old probe saw nothing…
     assert (
         subprocess.run(
@@ -231,18 +230,18 @@ def test_an_untracked_python_module_makes_the_build_dirty(repo: Path) -> None:
 
 
 def test_a_tracked_modification_makes_the_build_dirty(repo: Path) -> None:
-    (repo / "vllm_mlx" / "__init__.py").write_text("# edited\n")
+    (repo / "rapid_mlx" / "__init__.py").write_text("# edited\n")
     assert _dirty_probe(repo) is True
 
 
 def test_a_staged_change_makes_the_build_dirty(repo: Path) -> None:
-    (repo / "vllm_mlx" / "staged.py").write_text("x = 1\n")
-    _git(repo, "add", "vllm_mlx/staged.py")
+    (repo / "rapid_mlx" / "staged.py").write_text("x = 1\n")
+    _git(repo, "add", "rapid_mlx/staged.py")
     assert _dirty_probe(repo) is True
 
 
 def test_a_deletion_makes_the_build_dirty(repo: Path) -> None:
-    (repo / "vllm_mlx" / "__init__.py").unlink()
+    (repo / "rapid_mlx" / "__init__.py").unlink()
     assert _dirty_probe(repo) is True
 
 
@@ -381,7 +380,7 @@ def test_the_dirty_state_is_not_hidden_by_the_projection() -> None:
     """The projection narrows the model block; it must not be a place where a
     dirty build quietly becomes publishable."""
 
-    from vllm_mlx.community_bench.publication import project_run_for_publication
+    from rapid_mlx.community_bench.publication import project_run_for_publication
 
     public, withheld = project_run_for_publication(_cached_run())
     # The projection does not touch provenance at all — the refusal happens

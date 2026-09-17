@@ -15,7 +15,7 @@ import Testing
 @Suite("Real packaged run replay")
 struct CommunityRealRunReplayTests {
     /// Every line the CLI actually emitted, in order. `\u{1e}` is
-    /// `PROGRESS_TAG` from `vllm_mlx/community_bench/cli.py`.
+    /// `PROGRESS_TAG` from `rapid_mlx/community_bench/cli.py`.
     private static let capturedStderr: [String] = [
         "\u{1e}{\"event\":\"plan\",\"task_type\":\"text_generation\",\"protocol_id\":\"rapid-community-speed\",\"protocol_version\":2,\"cases\":[{\"case_id\":\"pp512-tg128\",\"warmup_rounds\":1,\"measured_rounds\":5},{\"case_id\":\"pp2048-tg512\",\"warmup_rounds\":1,\"measured_rounds\":5}],\"total_passes\":12}",
         "\u{1e}Benchmarking lfm2.5-1b-4bit (text_generation): 2 cases, 2 warmup + 10 measured rounds in total",

@@ -23,9 +23,9 @@ from typing import Any
 
 import pytest
 
-from vllm_mlx.community_bench import provenance_schema, run_builder
-from vllm_mlx.community_bench.provenance_schema import ProvenanceInvalid
-from vllm_mlx.community_bench.workspace import (
+from rapid_mlx.community_bench import provenance_schema, run_builder
+from rapid_mlx.community_bench.provenance_schema import ProvenanceInvalid
+from rapid_mlx.community_bench.workspace import (
     LocalRunArchive,
     ProvenanceUnreadable,
     validate_provenance,
@@ -57,7 +57,7 @@ def _script(name: str):
 
 
 def _packaged_module(root: Path) -> Path:
-    package = root / "rapid-mlx" / "site-packages" / "vllm_mlx" / "community_bench"
+    package = root / "rapid-mlx" / "site-packages" / "rapid_mlx" / "community_bench"
     package.mkdir(parents=True)
     (root / "rapid-mlx" / "VERSION").write_text("0.13.4\n")
     module = package / "run_builder.py"
@@ -80,7 +80,7 @@ def test_a_packaged_sidecar_without_a_stamp_fails_before_measuring(
 def test_a_bundled_app_without_a_stamp_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    package = tmp_path / "Rapid.app" / "Contents" / "Resources" / "lib" / "vllm_mlx"
+    package = tmp_path / "Rapid.app" / "Contents" / "Resources" / "lib" / "rapid_mlx"
     package.mkdir(parents=True)
     module = package / "run_builder.py"
     module.write_text("")
@@ -296,13 +296,13 @@ def _run_stamp_step(tmp_path: Path, fake_git_dir: Path, official: str):
     """Execute the real step-6b block from build-sidecar.sh."""
 
     text = BUILD_SIDECAR.read_text()
-    start = text.index('STAMP="$STAGE/site-packages/vllm_mlx/_build_stamp.json"')
+    start = text.index('STAMP="$STAGE/site-packages/rapid_mlx/_build_stamp.json"')
     end = text.index("# Recompile so the stamped package")
     fragment = tmp_path / "step6b.sh"
     fragment.write_text(text[start:end])
 
     stage = tmp_path / "stage" / "rapid-mlx"
-    (stage / "site-packages" / "vllm_mlx").mkdir(parents=True)
+    (stage / "site-packages" / "rapid_mlx").mkdir(parents=True)
     env = {
         **os.environ,
         "PATH": f"{fake_git_dir}:{os.environ['PATH']}",
@@ -317,7 +317,7 @@ def _run_stamp_step(tmp_path: Path, fake_git_dir: Path, official: str):
         text=True,
         env=env,
     )
-    stamp_path = stage / "site-packages" / "vllm_mlx" / "_build_stamp.json"
+    stamp_path = stage / "site-packages" / "rapid_mlx" / "_build_stamp.json"
     return result, stamp_path
 
 
@@ -349,19 +349,19 @@ def test_a_clean_tree_with_a_working_git_stamps_a_release(tmp_path: Path) -> Non
 
 def test_a_dirty_tree_still_blocks_an_official_build(tmp_path: Path) -> None:
     git_dir = _fake_git(
-        tmp_path / "bin", status_rc=0, status_out="?? vllm_mlx/patch.py"
+        tmp_path / "bin", status_rc=0, status_out="?? rapid_mlx/patch.py"
     )
     result, stamp_path = _run_stamp_step(tmp_path, git_dir, official="1")
     assert result.returncode != 0
     # The message wraps, so match a phrase that survives the line break.
     assert "refusing to build an OFFICIAL RELEASE from a modified" in result.stderr
-    assert "?? vllm_mlx/patch.py" in result.stderr
+    assert "?? rapid_mlx/patch.py" in result.stderr
     assert not stamp_path.exists()
 
 
 def test_a_dirty_tree_stamps_a_source_build(tmp_path: Path) -> None:
     git_dir = _fake_git(
-        tmp_path / "bin", status_rc=0, status_out="?? vllm_mlx/patch.py"
+        tmp_path / "bin", status_rc=0, status_out="?? rapid_mlx/patch.py"
     )
     result, stamp_path = _run_stamp_step(tmp_path, git_dir, official="0")
     assert result.returncode == 0, result.stderr

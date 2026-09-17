@@ -26,15 +26,15 @@ import json
 import sys
 from pathlib import Path
 
-STAMP_RELATIVE = Path("Contents/Resources/rapid-mlx/site-packages/vllm_mlx/_build_stamp.json")
+STAMP_RELATIVE = Path("Contents/Resources/rapid-mlx/site-packages/rapid_mlx/_build_stamp.json")
 
 #: The closed schema, loaded by path rather than imported as
-#: ``vllm_mlx.community_bench.provenance_schema``: importing the package pulls
+#: ``rapid_mlx.community_bench.provenance_schema``: importing the package pulls
 #: in the catalog and its third-party dependencies, which a build runner has no
 #: reason to have. One definition either way.
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[3]
-    / "vllm_mlx/community_bench/provenance_schema.py"
+    / "rapid_mlx/community_bench/provenance_schema.py"
 )
 
 

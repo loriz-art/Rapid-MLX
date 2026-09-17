@@ -11,7 +11,7 @@ import Testing
 /// and the stepper would have promised stages the run never enters.
 ///
 /// The runner now declares its plan in a structured event before the first
-/// pass (`_announce_plan` in `vllm_mlx/community_bench/local_runner.py`), and
+/// pass (`_announce_plan` in `rapid_mlx/community_bench/local_runner.py`), and
 /// the reducer adopts it.
 @Suite("Protocol-declared run plan")
 struct CommunityRunPlanTests {

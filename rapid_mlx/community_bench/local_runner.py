@@ -54,9 +54,9 @@ def _record_conditions_after() -> None:
 
 from .run_builder import (
     build_run,
-    resolve_provenance,
     consistent_model_identity,
     execution_config,
+    resolve_provenance,
     unresolved_model_identity,
     utc_now,
 )
