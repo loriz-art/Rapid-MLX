@@ -176,9 +176,7 @@ def test_every_withheld_fact_is_reported() -> None:
         by_path["model.components[0].source.resolved_revision"].value
         == "125e006d991147f3b432249d1bdf0821987f12b0"
     )
-    assert (
-        by_path["model.components[0].quantization"].value["weight_bits_x2"] == 8
-    )
+    assert by_path["model.components[0].quantization"].value["weight_bits_x2"] == 8
     assert all(fact.reason for fact in withheld)
 
 
@@ -261,5 +259,7 @@ def test_mirror_rejects_a_submission_with_an_extra_model_key() -> None:
     run = _cached_run()
     public, _ = project_run_for_publication(run)
     public["model"]["notes"] = "hello"
-    with pytest.raises(IngestionRejected, match="model.notes is not upload-allowlisted"):
+    with pytest.raises(
+        IngestionRejected, match="model.notes is not upload-allowlisted"
+    ):
         validate_model(public["model"], "text_generation")

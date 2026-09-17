@@ -224,6 +224,15 @@ struct CommunityBenchmarkPickerTests {
         #expect(narrow >= 6)
     }
 
+    @Test("Picker keeps a 24-point margin even in a very small window")
+    func pickerClampsToSmallViewport() {
+        let size = CommunityBenchmarkPickerSheet.clampedSheetSize(
+            in: CGSize(width: 360, height: 300)
+        )
+        #expect(size.width == 312)
+        #expect(size.height == 252)
+    }
+
     @Test("Download status never fabricates bytes, a rate, or an ETA")
     func downloadStatusIsHonest() {
         let downloaded = Self.models.first { $0.entry.alias == "qwen3.5-9b-4bit" }

@@ -424,7 +424,6 @@ def validate_provenance(
         raise ProvenanceUnreadable(str(exc)) from exc
 
 
-
 @dataclass(frozen=True)
 class LocalRunArchive:
     """Private, atomic JSON run archive. Reading never executes or uploads."""

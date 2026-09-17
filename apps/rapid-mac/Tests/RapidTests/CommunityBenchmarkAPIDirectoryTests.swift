@@ -478,7 +478,12 @@ struct CommunityBenchmarkAPIDirectoryTests {
         #expect(value?.publishedRunCount == 3)
         #expect(value?.modelCount == 2)
         #expect(await requested.count == 2)
-        #expect(await requested.all.allSatisfy { $0.contains("contributor=swift-otter-4417") })
+        #expect(
+            await requested.all.allSatisfy {
+                $0.contains("/api/benchmarks/atomic/contributors/swift-otter-4417")
+                    && !$0.contains("contributor=")
+            }
+        )
     }
 
     @Test("An unterminated cursor reports unavailable rather than a partial total")
@@ -496,6 +501,41 @@ struct CommunityBenchmarkAPIDirectoryTests {
         // contributor's real public total.
         #expect(state.value == nil)
         #expect(state.unavailableReason == .incompleteAggregate)
+    }
+
+    @Test("An incomplete final page without a cursor never becomes an exact total")
+    func incompletePageWithoutCursorIsUnavailable() async {
+        let incomplete = #"""
+        {"schema_version":1,"contributor":"swift-otter-4417","cursor":null,"complete":false,
+         "runs":[{"schema_version":1,"submission_id":"a","accepted_at":"2026-09-01T00:00:00Z",
+                  "contributor":null,"task_type":"text_generation",
+                  "model":{"repo_id":"mlx-community/A"},"cases":[]}]}
+        """#
+        let directory = Self.directory { request in Self.ok(incomplete, url: request.url!) }
+
+        let state = await directory.contributions(forSlug: "swift-otter-4417")
+
+        #expect(state.value == nil)
+        #expect(state.unavailableReason == .incompleteAggregate)
+    }
+
+    @Test("Contributor slug remains one encoded path segment")
+    func contributorSlugIsSafelyEncoded() async {
+        let complete = #"""
+        {"schema_version":1,"contributor":"swift/otter","cursor":null,"complete":true,
+         "runs":[]}
+        """#
+        let requested = RequestLog()
+        let directory = Self.directory { request in
+            await requested.record(request.url!.absoluteString)
+            return Self.ok(complete, url: request.url!)
+        }
+
+        _ = await directory.contributions(forSlug: "swift/otter")
+
+        #expect(await requested.all == [
+            "https://rapidmlx.com/api/benchmarks/atomic/contributors/swift%2Fotter?limit=50"
+        ])
     }
 
     // MARK: - Failures

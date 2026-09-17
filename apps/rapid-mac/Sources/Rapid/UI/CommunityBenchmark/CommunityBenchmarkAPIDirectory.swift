@@ -232,23 +232,33 @@ struct CommunityBenchmarkAPIDirectory: CommunityBenchmarkDirectory {
         var pages = 0
         do {
             repeat {
-                var components = URLComponents(
-                    url: baseURL.appendingPathComponent("/api/benchmarks/atomic/contributions"),
-                    resolvingAgainstBaseURL: false
-                )
-                var query = [
-                    URLQueryItem(name: "contributor", value: slug),
-                    URLQueryItem(name: "limit", value: "50"),
-                ]
+                let endpoint = baseURL
+                    .appendingPathComponent("api")
+                    .appendingPathComponent("benchmarks")
+                    .appendingPathComponent("atomic")
+                    .appendingPathComponent("contributors")
+                var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+                var segmentCharacters = CharacterSet.alphanumerics
+                segmentCharacters.formUnion(CharacterSet(charactersIn: "-._~"))
+                guard let encodedSlug = slug.addingPercentEncoding(
+                    withAllowedCharacters: segmentCharacters
+                ) else { return .unavailable(.failed("bad contributor slug")) }
+                components?.percentEncodedPath += "/" + encodedSlug
+                var query = [URLQueryItem(name: "limit", value: "50")]
                 if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
                 components?.queryItems = query
                 guard let url = components?.url else { return .unavailable(.failed("bad url")) }
                 let page: ContributionsPage = try await get(url)
                 runs.append(contentsOf: page.runs)
-                cursor = page.cursor
                 pages += 1
-                if page.complete { cursor = nil }
-                if pages >= maximumContributionPages, cursor != nil {
+                if page.complete {
+                    cursor = nil
+                } else if let next = page.cursor, !next.isEmpty {
+                    cursor = next
+                } else {
+                    return .unavailable(.incompleteAggregate)
+                }
+                if pages >= maximumContributionPages, !page.complete {
                     // Stopped early: the number would be a floor, and this
                     // screen promises an exact one.
                     return .unavailable(.incompleteAggregate)

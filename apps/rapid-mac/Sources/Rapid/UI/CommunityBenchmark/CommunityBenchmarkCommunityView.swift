@@ -187,9 +187,17 @@ struct CommunityBenchmarkCommunityView: View {
                 isBounded: value.isBounded
             )
             separator
-            statistic(value.publishedRunCount, String(localized: "published runs"))
+            statistic(
+                value.publishedRunCount,
+                String(localized: "published runs"),
+                isBounded: value.isBounded
+            )
             separator
-            statistic(value.modelCount, String(localized: "models"))
+            statistic(
+                value.modelCount,
+                String(localized: "models"),
+                isBounded: value.isBounded
+            )
         }
         .fixedSize()
     }
@@ -210,7 +218,7 @@ struct CommunityBenchmarkCommunityView: View {
                 .foregroundStyle(RapidTheme.textSecondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(count) \(label)")
+        .accessibilityLabel("\(isBounded ? "at least " : "")\(count) \(label)")
     }
 
     private var separator: some View {

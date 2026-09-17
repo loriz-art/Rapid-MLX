@@ -149,10 +149,9 @@ enum CommunityBenchmarkCopy {
                 body: String(
                     format: String(
                         localized:
-                            "No one has published a %1$@ benchmark from an %2$@ yet. Run it once to give the community its first point of comparison."
+                            "No one has published a benchmark for %1$@ yet. Run it once to give the community its first point of comparison."
                     ),
-                    scope.modelAlias,
-                    scope.macProfile.displayName
+                    scope.scopeDescription
                 )
             )
         case let .strengthen(count, isAtLeast):
@@ -209,10 +208,9 @@ enum CommunityBenchmarkCopy {
                 body: String(
                     format: String(
                         localized:
-                            "No published %1$@ result exists yet for an %2$@. Publishing yours gives other Mac users a real baseline."
+                            "No published result exists yet for %1$@. Publishing yours gives other Mac users a real baseline."
                     ),
-                    scope.modelAlias,
-                    scope.macProfile.displayName
+                    scope.scopeDescription
                 )
             )
         case let .strengthen(count, isAtLeast):
@@ -288,10 +286,9 @@ enum CommunityBenchmarkCopy {
                 body: String(
                     format: String(
                         localized:
-                            "Your %1$@ result is now the first published benchmark for an %2$@."
+                            "Your result is now the first published benchmark for %1$@."
                     ),
-                    scope.modelAlias,
-                    scope.macProfile.displayName
+                    scope.scopeDescription
                 )
             )
         case let .strengthen(_, isAtLeast):

@@ -221,10 +221,20 @@ def test_a_source_stamp_without_a_revision_fails_before_measuring(
 
 @pytest.mark.parametrize(
     "revision",
-    ["", "abc", "z" * 40, "a" * 39, "a" * 41, None, 12345, "  " + "a" * 38,
-     # Uppercase too: the schema is closed on the exact form, and quietly
-     # lowercasing would repair a document its producer never wrote.
-     "A" * 40, "AbC" + "d" * 37],
+    [
+        "",
+        "abc",
+        "z" * 40,
+        "a" * 39,
+        "a" * 41,
+        None,
+        12345,
+        "  " + "a" * 38,
+        # Uppercase too: the schema is closed on the exact form, and quietly
+        # lowercasing would repair a document its producer never wrote.
+        "A" * 40,
+        "AbC" + "d" * 37,
+    ],
 )
 def test_a_source_stamp_with_a_bad_revision_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, revision: object
@@ -303,9 +313,7 @@ def test_a_tracked_source_checkout_still_reports_source(
     module = tmp_path / "rapid_mlx" / "run_builder.py"
     module.parent.mkdir()
     module.write_text("")
-    monkeypatch.setattr(
-        run_builder.subprocess, "run", lambda *a, **k: next(responses)
-    )
+    monkeypatch.setattr(run_builder.subprocess, "run", lambda *a, **k: next(responses))
     assert run_builder._source_checkout_revision(module) == revision
 
 

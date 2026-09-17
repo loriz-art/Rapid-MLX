@@ -217,12 +217,16 @@ def test_valid_shapes_are_accepted() -> None:
     validate_provenance({"distribution": "release"})
     validate_provenance(CLEAN_SOURCE)
     validate_provenance(DIRTY_SOURCE)
-    validate_provenance({"distribution": "source", "revision": "a" * 40, "dirty": False})
+    validate_provenance(
+        {"distribution": "source", "revision": "a" * 40, "dirty": False}
+    )
 
 
 def test_ensure_publishable_refuses_a_damaged_document() -> None:
     with pytest.raises(PublicationRefused, match="cannot be verified"):
-        ensure_publishable({"distribution": "source", "revision": "a" * 40, "dirty": "true"})
+        ensure_publishable(
+            {"distribution": "source", "revision": "a" * 40, "dirty": "true"}
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -295,7 +299,9 @@ def test_cli_upload_refuses_a_dirty_run_before_any_network(
 
     monkeypatch.setattr(atomic_upload, "post_submission", no_network)
 
-    assert community_cli.benchmark_command(_share_args(run["run_id"], preview=False)) != 0
+    assert (
+        community_cli.benchmark_command(_share_args(run["run_id"], preview=False)) != 0
+    )
     document = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
     assert document["refused"] is True
 
@@ -366,7 +372,9 @@ def test_a_dirty_run_stays_refused_through_the_cli_after_a_clean_rebuild(
 
     # …and the old result is still refused.
     assert community_cli.benchmark_command(_share_args(run["run_id"])) != 0
-    assert json.loads(capsys.readouterr().err.strip().splitlines()[-1])["refused"] is True
+    assert (
+        json.loads(capsys.readouterr().err.strip().splitlines()[-1])["refused"] is True
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -412,7 +420,11 @@ def test_the_stamp_writer_refuses_official_plus_dirty() -> None:
 
 def test_the_build_script_refuses_official_plus_dirty() -> None:
     text = (REPO / "apps/rapid-mac/scripts/build-sidecar.sh").read_text()
-    official = text[text.index('if [[ "$OFFICIAL_RELEASE" == "1" ]]') : text.index("else\n    echo \"    distribution: source")]
+    official = text[
+        text.index('if [[ "$OFFICIAL_RELEASE" == "1" ]]') : text.index(
+            'else\n    echo "    distribution: source'
+        )
+    ]
     assert '"$SIDECAR_DIRTY" == "1"' in official
     assert "refusing to build an OFFICIAL RELEASE from a modified" in official
     assert "exit 1" in official
@@ -428,7 +440,9 @@ def test_being_at_the_candidate_sha_does_not_excuse_a_dirty_tree() -> None:
 
     # The writer takes a perfectly valid candidate revision and still refuses.
     with pytest.raises(SystemExit, match="modified working tree"):
-        _stamp_writer().build_stamp("1", "60be718538e44dd5497a75be419501080cbfff32", "1")
+        _stamp_writer().build_stamp(
+            "1", "60be718538e44dd5497a75be419501080cbfff32", "1"
+        )
 
 
 def test_the_verifier_rejects_a_release_stamp_with_a_dirty_flag() -> None:

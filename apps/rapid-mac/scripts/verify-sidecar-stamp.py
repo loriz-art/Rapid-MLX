@@ -26,7 +26,9 @@ import json
 import sys
 from pathlib import Path
 
-STAMP_RELATIVE = Path("Contents/Resources/rapid-mlx/site-packages/rapid_mlx/_build_stamp.json")
+STAMP_RELATIVE = Path(
+    "Contents/Resources/rapid-mlx/site-packages/rapid_mlx/_build_stamp.json"
+)
 
 #: The closed schema, loaded by path rather than imported as
 #: ``rapid_mlx.community_bench.provenance_schema``: importing the package pulls
@@ -90,7 +92,9 @@ def verify(stamp: dict, official: bool) -> list[str]:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 3:
-        raise SystemExit("usage: verify-sidecar-stamp.py <app-path> <official:true|false>")
+        raise SystemExit(
+            "usage: verify-sidecar-stamp.py <app-path> <official:true|false>"
+        )
     app, official_raw = Path(argv[1]), argv[2]
     if official_raw not in ("true", "false"):
         raise SystemExit(f"official must be 'true' or 'false', got {official_raw!r}")

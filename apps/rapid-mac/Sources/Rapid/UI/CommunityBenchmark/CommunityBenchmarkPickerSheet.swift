@@ -39,12 +39,19 @@ struct CommunityBenchmarkPickerSheet: View {
     /// Desktop dialog metrics from the design: 680 × 620, clamped into the
     /// viewport with at least a 24pt margin on every side. At a 900 × 600
     /// window this resolves to 680 × 552 and still shows six complete rows.
+    static func clampedSheetSize(in container: CGSize) -> CGSize {
+        CGSize(
+            width: min(680, max(1, container.width - 48)),
+            height: min(620, max(1, container.height - 48))
+        )
+    }
+
     private var sheetWidth: CGFloat {
-        min(680, max(420, containerSize.width - 48))
+        Self.clampedSheetSize(in: containerSize).width
     }
 
     private var sheetHeight: CGFloat {
-        min(620, max(360, containerSize.height - 48))
+        Self.clampedSheetSize(in: containerSize).height
     }
 
     private var selectedRow: CommunityBenchmarkPicker.Row? {

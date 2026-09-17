@@ -197,9 +197,7 @@ def describe_withheld(withheld: list[WithheldFact]) -> list[str]:
         "These details stay on this Mac and are NOT in the payload above:",
     ]
     lines.extend(f"  - {fact.describe()}" for fact in withheld)
-    lines.append(
-        "  Your local copy keeps them; only the submission is narrowed."
-    )
+    lines.append("  Your local copy keeps them; only the submission is narrowed.")
     return lines
 
 

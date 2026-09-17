@@ -41,10 +41,7 @@ def describe_withheld_dicts(withheld: list[dict[str, Any]]) -> list[str]:
     """``describe_withheld`` over the serialized form the preview carries."""
 
     return describe_withheld(
-        [
-            WithheldFact(item["path"], item["value"], item["reason"])
-            for item in withheld
-        ]
+        [WithheldFact(item["path"], item["value"], item["reason"]) for item in withheld]
     )
 
 

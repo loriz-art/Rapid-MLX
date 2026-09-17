@@ -151,6 +151,7 @@ struct CommunityBenchmarkBranchTests {
         )
         #expect(ready.eyebrow == "FIRST RESULT NEEDED")
         #expect(ready.body.contains("z-image-turbo"))
+        #expect(ready.body.contains("Image"))
         #expect(ready.body.contains("Apple M3 Pro · 18 GB"))
 
         let publish = CommunityBenchmarkCopy.publishInvitation(
@@ -158,6 +159,7 @@ struct CommunityBenchmarkBranchTests {
         )
         #expect(publish.headline == "Create the first public reference")
         #expect(publish.body.contains("z-image-turbo"))
+        #expect(publish.body.contains("Image"))
         #expect(publish.body.contains("Apple M3 Pro · 18 GB"))
 
         let published = CommunityBenchmarkCopy.publishedCelebration(
@@ -167,6 +169,7 @@ struct CommunityBenchmarkBranchTests {
             alreadyPublished: false
         )
         #expect(published.headline == "You created the first reference")
+        #expect(published.body.contains("Image"))
         #expect(published.body.contains("Apple M3 Pro · 18 GB"))
     }
 

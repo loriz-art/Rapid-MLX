@@ -134,14 +134,20 @@ INVALID = [
     pytest.param({}, id="empty"),
     pytest.param({"distribution": "nightly"}, id="unknown-distribution"),
     pytest.param({"revision": "a" * 40}, id="no-distribution"),
-    pytest.param({"distribution": "release", "revision": "a" * 40}, id="release+revision"),
+    pytest.param(
+        {"distribution": "release", "revision": "a" * 40}, id="release+revision"
+    ),
     pytest.param({"distribution": "release", "dirty": True}, id="release+dirty"),
     pytest.param({"distribution": "release", "dirty": False}, id="release+dirty-false"),
     pytest.param({"distribution": "release", "note": "x"}, id="release+unknown"),
     pytest.param({"distribution": "source"}, id="source-no-revision"),
     pytest.param({"distribution": "source", "revision": "abc"}, id="short-revision"),
-    pytest.param({"distribution": "source", "revision": "A" * 40}, id="uppercase-revision"),
-    pytest.param({"distribution": "source", "revision": "z" * 40}, id="non-hex-revision"),
+    pytest.param(
+        {"distribution": "source", "revision": "A" * 40}, id="uppercase-revision"
+    ),
+    pytest.param(
+        {"distribution": "source", "revision": "z" * 40}, id="non-hex-revision"
+    ),
     pytest.param(
         {"distribution": "source", "revision": "a" * 40, "dirty": "true"},
         id="dirty-string",
@@ -205,9 +211,7 @@ def test_a_release_stamp_with_a_revision_is_rejected_not_sanitized(
     resolve in favour of the more permissive reading."""
 
     stamp = tmp_path / "_build_stamp.json"
-    stamp.write_text(
-        json.dumps({"distribution": "release", "revision": "a" * 40})
-    )
+    stamp.write_text(json.dumps({"distribution": "release", "revision": "a" * 40}))
     monkeypatch.setattr(run_builder, "_BUILD_STAMP", stamp)
     with pytest.raises(RuntimeError, match="release"):
         run_builder.resolve_provenance()
@@ -241,7 +245,9 @@ def test_a_source_stamp_with_dirty_true_string_cannot_become_clean(
 
 def test_the_verifier_rejects_unknown_fields() -> None:
     verify = _script("verify-sidecar-stamp.py").verify
-    assert verify({"distribution": "source", "revision": "a" * 40, "x": 1}, official=False)
+    assert verify(
+        {"distribution": "source", "revision": "a" * 40, "x": 1}, official=False
+    )
     assert verify({"distribution": "release", "x": 1}, official=True)
 
 
@@ -252,7 +258,9 @@ def test_the_stamp_writer_only_produces_valid_documents() -> None:
         ("0", "a" * 40, "0"),
         ("0", "a" * 40, "1"),
     ]:
-        provenance_schema.validate(writer.validated(writer.build_stamp(official, revision, dirty)))
+        provenance_schema.validate(
+            writer.validated(writer.build_stamp(official, revision, dirty))
+        )
 
 
 def test_a_valid_dirty_stamp_survives_resolution_intact(

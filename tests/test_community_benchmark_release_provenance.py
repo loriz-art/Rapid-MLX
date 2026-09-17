@@ -108,7 +108,10 @@ def test_the_smoke_sidecar_build_states_its_provenance() -> None:
     """The direct build-sidecar.sh call builds a throwaway smoke artifact."""
 
     text = (REPO / ".github/workflows/auto-release.yml").read_text()
-    assert "RAPID_MLX_OFFICIAL_RELEASE=0 \\\n            bash apps/rapid-mac/scripts/build-sidecar.sh" in text
+    assert (
+        "RAPID_MLX_OFFICIAL_RELEASE=0 \\\n            bash apps/rapid-mac/scripts/build-sidecar.sh"
+        in text
+    )
 
 
 def test_every_desktop_releasable_caller_sets_official_release() -> None:
@@ -151,16 +154,16 @@ def test_the_verifier_rejects_a_release_carrying_a_revision() -> None:
     """The closed schema states this once, so the message is the schema's."""
 
     verify = _script("verify-sidecar-stamp.py").verify
-    problems = verify(
-        {"distribution": "release", "revision": "a" * 40}, official=True
-    )
+    problems = verify({"distribution": "release", "revision": "a" * 40}, official=True)
     assert any("must contain exactly" in p for p in problems)
 
 
 def test_the_verifier_requires_a_real_sha_on_a_source_build() -> None:
     verify = _script("verify-sidecar-stamp.py").verify
     assert verify({"distribution": "source", "revision": "abc"}, official=False)
-    assert verify({"distribution": "source", "revision": "a" * 40}, official=False) == []
+    assert (
+        verify({"distribution": "source", "revision": "a" * 40}, official=False) == []
+    )
 
 
 def test_the_verifier_tolerates_a_dirty_source_build() -> None:
@@ -259,7 +262,9 @@ def test_the_build_script_uses_the_robust_probe() -> None:
     # Comments may still name the old probe (they explain why it was wrong);
     # no executable line may still run it.
     code = [
-        line for line in text.splitlines() if line.strip() and not line.strip().startswith("#")
+        line
+        for line in text.splitlines()
+        if line.strip() and not line.strip().startswith("#")
     ]
     assert not any("diff --quiet HEAD" in line for line in code)
 
@@ -436,15 +441,11 @@ def test_a_source_runtime_with_a_valid_revision_validates() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "revision", ["A" * 40, "a" * 39, "a" * 41, "z" * 40, "", "  "]
-)
+@pytest.mark.parametrize("revision", ["A" * 40, "a" * 39, "a" * 41, "z" * 40, "", "  "])
 def test_a_source_runtime_rejects_a_malformed_revision(revision: str) -> None:
     with pytest.raises(IngestionRejected, match="rapid_mlx_revision"):
         validate_execution(
-            _execution(
-                _runtime(distribution="source", rapid_mlx_revision=revision)
-            ),
+            _execution(_runtime(distribution="source", rapid_mlx_revision=revision)),
             "text_generation",
         )
 

@@ -35,7 +35,7 @@ _WORKER_CANDIDATES = (
 )
 
 
-class IngestionRejected(Exception):
+class IngestionRejected(Exception):  # noqa: N818 - mirrors the service contract name
     """The worker would refuse this submission, with its own message."""
 
 
