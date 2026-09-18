@@ -180,8 +180,10 @@ struct CommunityBenchmarkPublishRefreshTests {
         let totals = await directory.contributions(forSlug: slug)
 
         let url = try! #require(await requested.urls.first)
-        #expect(url.path.hasSuffix("/api/benchmarks/atomic/contributions"))
-        #expect(url.query?.contains("contributor=swift-otter-4417") == true)
+        #expect(url.path.hasSuffix("/api/benchmarks/atomic/contributors/swift-otter-4417"))
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(queryItems.contains(URLQueryItem(name: "limit", value: "50")))
+        #expect(!queryItems.contains(where: { $0.name == "contributor" }))
         // Exact, because the endpoint paginates to `complete`. This is the
         // number `receipts.count` got wrong when a local write failed.
         #expect(totals.value?.publishedRunCount == 2)

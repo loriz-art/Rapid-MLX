@@ -101,6 +101,7 @@ struct CommunityBenchmarkPickerSheet: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "Clear search"))
+                    .accessibilityIdentifier("CommunityBenchmark.Picker.ClearSearch")
                 }
                 Text(listing.countLabel)
                     .font(RapidFont.secondary)

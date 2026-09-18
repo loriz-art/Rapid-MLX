@@ -96,6 +96,7 @@ struct CommunityBenchmarkMyResultsView: View {
                     }
                 }
                 .buttonStyle(.rapidSecondaryCompact)
+                .accessibilityIdentifier("CommunityBenchmark.MyResults.ContributorProfile")
                 .accessibilityLabel(contributor.profileURL.map { _ in
                     String(
                         format: String(localized: "View the contributor page for %1$@"),
@@ -283,6 +284,7 @@ struct CommunityBenchmarkMyResultsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("CommunityBenchmark.MyResults.Expand.\(result.id)")
                 .accessibilityLabel(
                     String(
                         format: String(localized: "%1$@, %2$@ details"),

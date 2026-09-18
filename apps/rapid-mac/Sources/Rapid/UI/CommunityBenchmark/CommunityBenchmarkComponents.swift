@@ -346,6 +346,7 @@ struct CommunityLeaderboardLinkRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("CommunityBenchmark.Community.Leaderboard")
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(RapidTheme.hairline)
