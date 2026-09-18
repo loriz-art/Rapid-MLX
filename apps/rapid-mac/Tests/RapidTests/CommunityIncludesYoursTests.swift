@@ -69,7 +69,8 @@ struct CommunityIncludesYoursTests {
     """#
 
     private static func directory(_ body: String = feed) -> CommunityBenchmarkAPIDirectory {
-        CommunityBenchmarkAPIDirectory(
+        let body = feedIncludingRuns(body)
+        return CommunityBenchmarkAPIDirectory(
             transport: { request in
                 (
                     Data(body.utf8),
@@ -80,6 +81,35 @@ struct CommunityIncludesYoursTests {
             },
             aliasForRepoID: { $0.replacingOccurrences(of: "mlx-community/", with: "").lowercased() }
         )
+    }
+
+    /// Coverage counts distinct submissions from `runs`, not summary-cell
+    /// samples (one submission can populate several cells). Keep these compact
+    /// hand-written summary fixtures realistic by materializing one distinct
+    /// run per advertised sample.
+    private static func feedIncludingRuns(_ body: String) -> String {
+        guard let data = body.data(using: .utf8),
+              var envelope = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let summaries = envelope["summary"] as? [[String: Any]],
+              (envelope["runs"] as? [[String: Any]])?.isEmpty != false else { return body }
+        var runs: [[String: Any]] = []
+        for (cellIndex, summary) in summaries.enumerated() {
+            let samples = summary["samples"] as? Int ?? 0
+            for sampleIndex in 0..<samples {
+                runs.append([
+                    "submission_id": "fixture-\(cellIndex)-\(sampleIndex)",
+                    "accepted_at": summary["latest_at"] as? String ?? "2026-09-06T02:00:00Z",
+                    "task_type": summary["task_type"] as Any,
+                    "model": summary["model"] as Any,
+                    "machine": summary["machine"] as Any,
+                    "protocol": summary["protocol"] as Any,
+                ])
+            }
+        }
+        envelope["runs"] = runs
+        guard let encoded = try? JSONSerialization.data(withJSONObject: envelope, options: [.sortedKeys])
+        else { return body }
+        return String(decoding: encoded, as: UTF8.self)
     }
 
     private static func scope(

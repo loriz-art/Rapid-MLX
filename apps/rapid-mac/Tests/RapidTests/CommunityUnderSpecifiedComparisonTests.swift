@@ -70,7 +70,9 @@ struct CommunityUnderSpecifiedComparisonTests {
     private static func feed(
         models: [String], samples: [Int], medians: [Double]
     ) -> String {
-        let cells = zip(zip(models, samples), medians).map { pair, median in
+        let indexed = Array(zip(zip(models, samples), medians).enumerated())
+        let cells = indexed.map { _, value in
+            let (pair, median) = value
             let (model, sampleCount) = pair
             return #"""
             {"task_type":"text_generation","model":\#(model),
@@ -83,7 +85,13 @@ struct CommunityUnderSpecifiedComparisonTests {
              "samples":\#(sampleCount),"contributors":[],"latest_at":"2026-09-06T02:00:00Z"}
             """#
         }.joined(separator: ",")
-        return #"{"schema_version":1,"summary":[\#(cells)],"runs":[]}"#
+        let runs = indexed.flatMap { cellIndex, value -> [String] in
+            let ((model, sampleCount), _) = value
+            return (0..<sampleCount).map { sampleIndex in
+                #"{"submission_id":"fixture-\#(cellIndex)-\#(sampleIndex)","accepted_at":"2026-09-06T02:00:00Z","task_type":"text_generation","model":\#(model),"machine":{"chip":"Apple M3 Pro","memory_gib":18},"protocol":{"id":"rapid-community-speed","version":2}}"#
+            }
+        }.joined(separator: ",")
+        return #"{"schema_version":1,"summary":[\#(cells)],"runs":[\#(runs)]}"#
     }
 
     private static func directory(_ body: String) -> CommunityBenchmarkAPIDirectory {
