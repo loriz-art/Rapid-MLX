@@ -113,11 +113,12 @@ enum CommunityWorkload: String, Hashable, Sendable, CaseIterable {
 
     /// The contract's `workload.task_type`, as both local records and
     /// `summary[]` spell it.
-    init(taskType: String) {
+    init?(taskType: String) {
         switch taskType {
+        case "text_generation": self = .llm
         case "image_generation": self = .image
         case "video_generation": self = .video
-        default: self = .llm
+        default: return nil
         }
     }
 

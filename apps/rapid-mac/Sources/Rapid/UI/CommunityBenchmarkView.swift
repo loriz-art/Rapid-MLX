@@ -676,13 +676,14 @@ struct CommunityBenchmarkResult: Decodable, Identifiable {
     func communityScope(alias: (String) -> String) -> CommunityBenchmarkScope? {
         guard let modelIdentity,
               let macProfile,
+              let communityWorkload = CommunityWorkload(taskType: workload.taskType),
               let protocolID = workload.protocolID,
               let protocolVersion = workload.protocolVersion,
               let comparisonIdentity
         else { return nil }
         return CommunityBenchmarkScope(
             modelAlias: alias(modelIdentity.repoID),
-            workload: CommunityWorkload(taskType: workload.taskType),
+            workload: communityWorkload,
             protocolID: protocolID,
             protocolVersion: protocolVersion,
             macProfile: macProfile,

@@ -224,7 +224,9 @@ struct CommunityRunPlanEvent: Decodable, Sendable {
 
     /// Nil unless this really is a plan event naming at least one case.
     var plan: CommunityRunPlan? {
-        guard event == "plan", let cases, !cases.isEmpty else { return nil }
+        guard event == "plan", let cases, !cases.isEmpty,
+              let workload = CommunityWorkload(taskType: taskType ?? "")
+        else { return nil }
         let declared = cases.compactMap { declared -> CommunityRunPlan.Case? in
             guard let id = declared.caseID else { return nil }
             return CommunityRunPlan.Case(
@@ -235,7 +237,7 @@ struct CommunityRunPlanEvent: Decodable, Sendable {
         }
         guard !declared.isEmpty else { return nil }
         return CommunityRunPlan(
-            workload: CommunityWorkload(taskType: taskType ?? ""),
+            workload: workload,
             cases: declared
         )
     }

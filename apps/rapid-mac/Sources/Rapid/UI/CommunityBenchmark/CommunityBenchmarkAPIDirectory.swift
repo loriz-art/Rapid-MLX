@@ -410,7 +410,7 @@ private struct SummaryCell: Decodable {
         return cells.contains { $0.contributorSlugs.contains(viewerSlug) }
     }
 
-    var workload: CommunityWorkload { CommunityWorkload(taskType: taskType) }
+    var workload: CommunityWorkload? { CommunityWorkload(taskType: taskType) }
 
     /// The published identity of the model this cell aggregates.
     var identity: CommunityModelIdentity? { model.identity }
@@ -463,7 +463,7 @@ private struct SummaryCell: Decodable {
     func projectionCell(
         _ aliasForRepoID: (String) -> String
     ) -> CommunityTableProjection.Cell? {
-        guard let identity else { return nil }
+        guard let identity, let workload else { return nil }
         return CommunityTableProjection.Cell(
             modelAlias: aliasForRepoID(identity.repoID),
             modelIdentity: identity,

@@ -402,6 +402,22 @@ struct CommunityBenchmarkAPIDirectoryTests {
         #expect(imageRows?.first?.summary.unit == "s")
     }
 
+    @Test("Unknown server workloads never fall through into the LLM table")
+    func unknownWorkloadsAreDiscarded() async {
+        let unsupported = Self.publicFeed.replacingOccurrences(
+            of: #""task_type":"text_generation""#,
+            with: #""task_type":"future_workload""#
+        )
+        let directory = Self.directory { request in
+            Self.ok(unsupported, url: request.url!)
+        }
+
+        let state = await directory.table(
+            macProfile: Self.profile, workload: .llm, metric: .generationSpeed
+        )
+        #expect(state == .unavailable(.boundedFeed))
+    }
+
     // MARK: - Coverage
 
     @Test("Coverage never flags a first-result opportunity from a bounded feed")

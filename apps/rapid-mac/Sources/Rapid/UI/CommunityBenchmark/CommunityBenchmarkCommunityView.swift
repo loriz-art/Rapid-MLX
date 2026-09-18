@@ -334,7 +334,7 @@ struct CommunityBenchmarkCommunityView: View {
                     Divider()
                 }
 
-                Text("Median and range come from the published observations themselves. A dash means there is only one observation.")
+                Text("Median comes from published observations. A dash means the bounded feed does not provide an observed range.")
                     .font(RapidFont.secondary)
                     .foregroundStyle(RapidTheme.textTertiary)
                     .padding(.top, RapidTheme.Space.md)
