@@ -486,6 +486,16 @@ jobs:
           # Sparkle / DMG build can walk tag ancestry from the release commit.
           fetch-depth: 0
 
+      - name: Validate the detected release mode
+        env:
+          DRY_RUN: ${{ needs.detect.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          case "$DRY_RUN" in
+            true|false) ;;
+            *) echo "::error::detect emitted invalid dry_run=$DRY_RUN"; exit 1 ;;
+          esac
+
       - name: Resolve the previous rapid-mac release tag
         id: prev
         env:
@@ -543,7 +553,7 @@ jobs:
           # The candidate gate also runs for a dry run, which validates the
           # build and then discards it. Only a real release promotes these
           # bytes, so only a real release may stamp them as one.
-          official_release: ${{ needs.detect.outputs.dry_run != 'true' }}
+          official_release: ${{ needs.detect.outputs.dry_run == 'false' }}
           # Build the canonical Sparkle bytes here too. The protected tagged
           # lane promotes this exact signed/notarised bundle; it never rebuilds.
           publish_sparkle: 'true'

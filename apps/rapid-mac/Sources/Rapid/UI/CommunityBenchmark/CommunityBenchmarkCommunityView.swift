@@ -84,22 +84,35 @@ struct CommunityBenchmarkCommunityView: View {
     }
 
     private func pulseProof(_ value: CommunityPulse) -> some View {
-        HStack(alignment: .center, spacing: 40) {
-            avatarCluster(value)
-            VStack(alignment: .leading, spacing: 3) {
-                statisticsSentence(value)
-                if let last = value.lastContributionAt {
-                    Text(
-                        String(
-                            format: String(localized: "Last contribution %1$@"),
-                            RelativeDateTimeFormatter().localizedString(for: last, relativeTo: Date())
-                        )
-                    )
-                    .font(RapidFont.secondary)
-                    .foregroundStyle(RapidTheme.textTertiary)
+        Group {
+            if isNarrow {
+                VStack(alignment: .leading, spacing: RapidTheme.Space.md) {
+                    avatarCluster(value)
+                    pulseStatistics(value)
+                }
+            } else {
+                HStack(alignment: .center, spacing: 40) {
+                    avatarCluster(value)
+                    pulseStatistics(value)
+                    Spacer(minLength: 0)
                 }
             }
-            Spacer(minLength: 0)
+        }
+    }
+
+    private func pulseStatistics(_ value: CommunityPulse) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            statisticsSentence(value)
+            if let last = value.lastContributionAt {
+                Text(
+                    String(
+                        format: String(localized: "Last contribution %1$@"),
+                        RelativeDateTimeFormatter().localizedString(for: last, relativeTo: Date())
+                    )
+                )
+                .font(RapidFont.secondary)
+                .foregroundStyle(RapidTheme.textTertiary)
+            }
         }
     }
 

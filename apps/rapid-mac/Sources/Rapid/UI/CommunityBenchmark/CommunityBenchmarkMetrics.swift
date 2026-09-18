@@ -68,12 +68,19 @@ enum CommunityBenchmarkMetrics {
 
     private static func textMetrics(_ result: CommunityBenchmarkResult) -> MetricSet {
         let summaries = result.caseSummaries
-        let short = summaries.first { $0.caseID == shortTextCaseID } ?? summaries.first
-        let long = summaries.first { $0.caseID == longTextCaseID }
-            ?? summaries.first { $0.caseID != short?.caseID }
+        guard let short = summaries.first(where: { $0.caseID == shortTextCaseID }),
+              let long = summaries.first(where: { $0.caseID == longTextCaseID }) else {
+            return MetricSet(
+                workload: .llm,
+                headline: nil,
+                headlineCaption: "",
+                supporting: [],
+                incompleteStatus: String(localized: "Unsupported benchmark protocol")
+            )
+        }
 
         var supporting: [Metric] = []
-        if let ttft = short?.ttftMS {
+        if let ttft = short.ttftMS {
             supporting.append(
                 Metric(
                     key: "ttft",
@@ -93,7 +100,7 @@ enum CommunityBenchmarkMetrics {
                 )
             )
         }
-        if let longSpeed = long?.decodeTokensPerSecond {
+        if let longSpeed = long.decodeTokensPerSecond {
             supporting.append(
                 Metric(
                     key: "long",
@@ -114,7 +121,7 @@ enum CommunityBenchmarkMetrics {
             )
         }
 
-        let headline = short?.decodeTokensPerSecond.map { speed in
+        let headline = short.decodeTokensPerSecond.map { speed in
             Metric(
                 key: "speed",
                 value: String(format: "%.1f", speed),
@@ -122,7 +129,7 @@ enum CommunityBenchmarkMetrics {
                 label: String(localized: "Generation speed")
             )
         }
-        let rounds = short?.rounds ?? 0
+        let rounds = short.rounds
         return MetricSet(
             workload: .llm,
             headline: headline,

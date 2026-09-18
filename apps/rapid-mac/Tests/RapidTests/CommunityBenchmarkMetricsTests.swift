@@ -52,6 +52,21 @@ struct CommunityBenchmarkMetricsTests {
         #expect(set.incompleteStatus == nil)
     }
 
+    @Test("Unknown text cases are not mislabeled as short and long prompts")
+    func unknownTextCasesAreUnsupported() throws {
+        let unknown = Self.textRun
+            .replacingOccurrences(of: "pp512-tg128", with: "vendor-short")
+            .replacingOccurrences(of: "pp2048-tg512", with: "vendor-long")
+        let set = CommunityBenchmarkMetrics.metricSet(
+            for: try Self.decode(unknown), workload: .llm
+        )
+
+        #expect(set.headline == nil)
+        #expect(set.supporting.isEmpty)
+        #expect(set.headlineCaption.isEmpty)
+        #expect(set.incompleteStatus == "Unsupported benchmark protocol")
+    }
+
     @Test("An image run reports render time and never tokens per second")
     func imageMetrics() throws {
         let set = CommunityBenchmarkMetrics.metricSet(
