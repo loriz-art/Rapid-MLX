@@ -101,7 +101,10 @@ def test_the_tag_workflow_marks_only_real_tags_official() -> None:
 
 def test_auto_release_marks_only_non_dry_runs_official() -> None:
     text = (REPO / ".github/workflows/auto-release.yml").read_text()
-    assert "official_release: ${{ needs.detect.outputs.dry_run != 'true' }}" in text
+    # The workflow first fail-closes unless detect emits the literal string
+    # ``true`` or ``false``.  Keep the positive comparison here: only the
+    # validated real-release value may stamp distributable bytes as official.
+    assert "official_release: ${{ needs.detect.outputs.dry_run == 'false' }}" in text
 
 
 def test_the_smoke_sidecar_build_states_its_provenance() -> None:
