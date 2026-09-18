@@ -168,7 +168,10 @@ struct CommunityBenchmarkBranchTests {
             observationCountAfterPublishing: 1,
             alreadyPublished: false
         )
-        #expect(published.headline == "You created the first reference")
+        #expect(published.headline == "Published to Community Benchmark")
+        #expect(!published.headline.localizedCaseInsensitiveContains("first"))
+        #expect(!published.body.localizedCaseInsensitiveContains("first"))
+        #expect(published.body.contains("z-image-turbo"))
         #expect(published.body.contains("Image"))
         #expect(published.body.contains("Apple M3 Pro · 18 GB"))
     }

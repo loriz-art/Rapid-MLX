@@ -315,30 +315,33 @@ struct CommunityBenchmarkCommunityView: View {
                 )
             )
         case let .ready(rows):
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: RapidTheme.Space.md) {
-                    Text("MODEL").frame(maxWidth: .infinity, alignment: .leading)
-                    Text("OBSERVED RANGE").frame(width: 130, alignment: .trailing)
-                    Text("MEDIAN").frame(width: 80, alignment: .trailing)
-                    Text("OBSERVATIONS").frame(width: 104, alignment: .trailing)
-                }
-                .font(RapidFont.groupLabel)
-                .tracking(0.4)
-                .foregroundStyle(RapidTheme.textTertiary)
-                .padding(.vertical, RapidTheme.Space.sm)
-
-                Divider()
-
-                ForEach(rows) { row in
-                    observationRow(row)
-                    Divider()
-                }
-
-                Text("Median comes from published observations. A dash means the bounded feed does not provide an observed range.")
-                    .font(RapidFont.secondary)
+            ScrollView(.horizontal, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: RapidTheme.Space.md) {
+                        Text("MODEL").frame(maxWidth: .infinity, alignment: .leading)
+                        Text("OBSERVED RANGE").frame(width: 130, alignment: .trailing)
+                        Text("MEDIAN").frame(width: 80, alignment: .trailing)
+                        Text("OBSERVATIONS").frame(width: 104, alignment: .trailing)
+                    }
+                    .font(RapidFont.groupLabel)
+                    .tracking(0.4)
                     .foregroundStyle(RapidTheme.textTertiary)
-                    .padding(.top, RapidTheme.Space.md)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, RapidTheme.Space.sm)
+
+                    Divider()
+
+                    ForEach(rows) { row in
+                        observationRow(row)
+                        Divider()
+                    }
+
+                    Text("Median comes from published observations. A dash means the bounded feed does not provide an observed range.")
+                        .font(RapidFont.secondary)
+                        .foregroundStyle(RapidTheme.textTertiary)
+                        .padding(.top, RapidTheme.Space.md)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(minWidth: 620, alignment: .leading)
             }
         }
     }

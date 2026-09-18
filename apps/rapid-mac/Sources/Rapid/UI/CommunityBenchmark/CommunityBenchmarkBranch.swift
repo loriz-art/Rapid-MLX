@@ -262,8 +262,8 @@ enum CommunityBenchmarkCopy {
 
     /// `branchBeforePublishing` is the branch the Result screen showed, and
     /// `summaryAfterPublishing` is derived from the receipt. A celebration is
-    /// only allowed to claim a first reference when the pre-publish branch
-    /// *knew* the count was zero.
+    /// never allowed to claim an ordinal based only on the pre-publish branch:
+    /// another contributor can publish before this request commits.
     static func publishedCelebration(
         branchBeforePublishing: CommunityContributionBranch,
         scope: CommunityBenchmarkScope,
@@ -282,11 +282,11 @@ enum CommunityBenchmarkCopy {
         switch branchBeforePublishing {
         case .firstReference:
             return PublishedCelebration(
-                headline: String(localized: "You created the first reference"),
+                headline: String(localized: "Published to Community Benchmark"),
                 body: String(
                     format: String(
                         localized:
-                            "Your result is now the first published benchmark for %1$@."
+                            "Your result is now part of the public observations for %1$@."
                     ),
                     scope.scopeDescription
                 )
