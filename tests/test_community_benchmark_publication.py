@@ -150,6 +150,33 @@ def test_a_bare_record_is_projected_unchanged(
     assert withheld == []
 
 
+@pytest.mark.parametrize("model", [None, "not-an-object", {"components": None}])
+def test_projection_leaves_records_without_component_objects_unchanged(
+    model: object,
+) -> None:
+    run = {"model": model, "measurements": []}
+    public, withheld = project_run_for_publication(run)
+    assert public == run
+    assert withheld == []
+
+
+def test_projection_skips_non_object_components() -> None:
+    run = {"model": {"components": [None, "invalid"]}}
+    public, withheld = project_run_for_publication(run)
+    assert public == run
+    assert withheld == []
+
+
+def test_withheld_fact_value_semantics_are_type_safe() -> None:
+    from rapid_mlx.community_bench.publication import WithheldFact
+
+    fact = WithheldFact("model.source", "private", "not public")
+    assert fact == WithheldFact("model.source", "private", "not public")
+    assert fact != WithheldFact("model.source", "other", "not public")
+    assert fact != object()
+    assert "model.source" in repr(fact)
+
+
 # ---------------------------------------------------------------------------
 # Nothing is discarded silently
 # ---------------------------------------------------------------------------

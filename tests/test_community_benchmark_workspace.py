@@ -5133,6 +5133,21 @@ def test_cli_run_streams_progress_to_stderr_only_in_text_mode(
     assert json.loads(captured.out) == {"run_id": "abc-123", "measurements": []}
 
 
+def test_progress_observers_cannot_break_a_benchmark() -> None:
+    """UI/logging adapters are best-effort and may disappear mid-run."""
+
+    class NotJSON:
+        pass
+
+    community_cli._tagged_event_to_stderr({"value": NotJSON()})
+
+    def broken_sink(_payload: dict[str, object]) -> None:
+        raise RuntimeError("consumer closed")
+
+    local_runner._emit(broken_sink, {"stage": "measure"})
+    local_runner._emit(None, {"stage": "measure"})
+
+
 def test_run_local_announces_plan_and_forwards_progress(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

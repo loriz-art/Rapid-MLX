@@ -246,6 +246,23 @@ def test_a_source_stamp_with_a_bad_revision_is_refused(
         run_builder.resolve_provenance()
 
 
+@pytest.mark.parametrize(
+    ("candidate", "expected"),
+    [
+        (None, None),
+        (123, None),
+        ("abc", None),
+        ("z" * 40, None),
+        ("A" * 40, "a" * 40),
+        ("  " + "b" * 40 + "\n", "b" * 40),
+    ],
+)
+def test_revision_normalizer_accepts_only_a_full_hex_sha(
+    candidate: object, expected: str | None
+) -> None:
+    assert run_builder._valid_revision(candidate) == expected
+
+
 def test_an_unknown_distribution_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
