@@ -910,6 +910,35 @@ def test_local_archive_receipt_marks_only_an_existing_run_shared(
     assert archive.receipt(run["run_id"]) is None
 
 
+def test_local_archive_receipt_uses_the_projected_public_payload(
+    tmp_path: Path,
+) -> None:
+    """A valid upload receipt remains valid for the richer local record."""
+    from rapid_mlx.community_bench.publication import project_run_for_publication
+
+    archive = LocalRunArchive(tmp_path)
+    run = _text_run()
+    component = run["model"]["components"][0]
+    component["source"]["resolved_revision"] = "a" * 40
+    component["source"]["subfolder"] = "mlx"
+    component["quantization"] = {
+        "kind": "weights",
+        "method": "affine",
+        "weight_bits_x2": 8,
+        "base_dtype": "float16",
+    }
+    archive.save(run)
+    install_id = "012345abcdef"
+    wire, withheld = project_run_for_publication(run)
+    wire["install_id"] = install_id
+    receipt = _receipt(run["run_id"], run_digest=atomic_upload.atomic_run_digest(wire))
+
+    archive.save_receipt(receipt, install_id=install_id)
+
+    assert withheld
+    assert archive.receipt(run["run_id"]) == receipt
+
+
 @pytest.mark.parametrize("contents", [b'{"schema_version":', b"\xff\xfe"])
 def test_corrupt_optional_receipt_does_not_hide_local_runs(
     tmp_path: Path, contents: bytes

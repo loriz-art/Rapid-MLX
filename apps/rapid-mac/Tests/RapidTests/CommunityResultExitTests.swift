@@ -234,6 +234,17 @@ struct CommunityResultExitTests {
 /// phrase, and the actions stack.
 @Suite("Narrow result layout")
 struct CommunityNarrowResultLayoutTests {
+    @Test("Comparison direction follows the workload metric")
+    @MainActor
+    func comparisonDirection() {
+        #expect(CommunityBenchmarkResultView.isFaster(workload: .llm, delta: 4))
+        #expect(!CommunityBenchmarkResultView.isFaster(workload: .llm, delta: -4))
+        #expect(CommunityBenchmarkResultView.isFaster(workload: .image, delta: -4))
+        #expect(!CommunityBenchmarkResultView.isFaster(workload: .image, delta: 4))
+        #expect(CommunityBenchmarkResultView.isFaster(workload: .video, delta: -4))
+        #expect(!CommunityBenchmarkResultView.isFaster(workload: .video, delta: 4))
+    }
+
     @Test("The narrow status chip says something complete, not something truncated")
     func narrowStatusLabel() {
         let wide = CommunityBenchmarkResultView.statusLabel(

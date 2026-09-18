@@ -577,8 +577,9 @@ class LocalRunArchive:
         # forged receipt file from making an unrelated row look shared.
         run = self.get(run_id)
         from .atomic_upload import atomic_run_digest
+        from .publication import project_run_for_publication
 
-        wire = copy.deepcopy(run)
+        wire, _ = project_run_for_publication(copy.deepcopy(run))
         wire["install_id"] = install_id
         if atomic_run_digest(wire) != receipt["run_digest"]:
             raise ValueError("receipt does not identify the current archived run")
@@ -612,8 +613,9 @@ class LocalRunArchive:
         except ValueError:
             return None
         from .atomic_upload import atomic_run_digest
+        from .publication import project_run_for_publication
 
-        wire = copy.deepcopy(self.get(run_id))
+        wire, _ = project_run_for_publication(copy.deepcopy(self.get(run_id)))
         wire["install_id"] = install_id
         if atomic_run_digest(wire) != value["run_digest"]:
             return None

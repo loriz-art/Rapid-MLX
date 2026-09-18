@@ -351,8 +351,9 @@ struct CommunityBenchmarkResultView: View {
                 )
             )
         }
+        let isFaster = Self.isFaster(workload: metrics.workload, delta: delta)
         return (
-            delta > 0
+            isFaster
                 ? String(localized: "Faster than the median")
                 : String(localized: "Slower than the median"),
             String(
@@ -362,6 +363,13 @@ struct CommunityBenchmarkResultView: View {
                 delta > 0 ? String(localized: "above") : String(localized: "below")
             )
         )
+    }
+
+    /// Throughput is better when larger; elapsed time is better when smaller.
+    /// Keep that distinction in one testable rule so image/video comparisons
+    /// cannot accidentally inherit the language-model direction.
+    static func isFaster(workload: CommunityWorkload, delta: Double) -> Bool {
+        workload == .llm ? delta > 0 : delta < 0
     }
 
     // MARK: - Publish invitation

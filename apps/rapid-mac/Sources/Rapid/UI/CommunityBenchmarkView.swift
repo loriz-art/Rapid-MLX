@@ -1703,10 +1703,11 @@ struct CommunityBenchmarkView: View {
             await refreshResults()
             await refreshCommunity()
         }
-        .onChange(of: selectedAlias) { _, _ in
-            // Bump synchronously so the previous model's in-flight answer is
-            // already stale before the replacement starts — and bump ONLY the
-            // observations generation, so coverage/pulse/totals keep theirs.
+        .onChange(of: activeObservationScope) { _, _ in
+            // Bump synchronously whenever the actual query scope changes —
+            // including Result → Ready transitions for the same model. That
+            // makes the previous scope's in-flight answer stale before the
+            // replacement starts, without invalidating unrelated reads.
             let token = readGenerations.begin(.observations)
             staleFeedRetryTask?.cancel()
             staleFeedRetryTask = nil
@@ -2012,7 +2013,8 @@ struct CommunityBenchmarkView: View {
         let answer = await directory.observations(
             for: requested, viewerSlug: knownContributor?.slug
         )
-        guard readGenerations.isCurrent(.observations, token) else { return }
+        guard readGenerations.isCurrent(.observations, token),
+              activeObservationScope == requested else { return }
         // Fold through the publication state so a stale cached feed cannot
         // walk the confirmed post-publish count backwards.
         observations = publication.merge(answer, scope: requested)
