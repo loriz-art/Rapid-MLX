@@ -234,12 +234,12 @@ enum CommunityBenchmarkCopy {
                 body: String(
                     format: String(
                         localized:
-                            "%1$@ %2$@ measured this pairing. Yours makes the comparison harder to argue with."
+                            "%1$@ %2$@ for this pairing. Yours makes the comparison harder to argue with."
                     ),
                     Self.countPhrase(count, isAtLeast: isAtLeast),
                     count == 1 && !isAtLeast
-                        ? String(localized: "person has")
-                        : String(localized: "people have")
+                        ? String(localized: "published result exists")
+                        : String(localized: "published results exist")
                 )
             )
         case .unknown:

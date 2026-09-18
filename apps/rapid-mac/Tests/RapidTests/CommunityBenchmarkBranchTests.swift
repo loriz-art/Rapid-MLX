@@ -201,7 +201,7 @@ struct CommunityBenchmarkBranchTests {
         let publish = CommunityBenchmarkCopy.publishInvitation(
             branch: .strengthen(observationCount: 1), scope: Self.scope
         )
-        #expect(publish.body.contains("1 person has"))
+        #expect(publish.body.contains("1 published result exists"))
     }
 
     @Test("An unknown branch never says first, and never promises a comparison")

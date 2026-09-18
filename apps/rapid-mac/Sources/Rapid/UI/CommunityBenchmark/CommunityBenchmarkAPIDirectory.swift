@@ -59,17 +59,25 @@ struct CommunityBenchmarkAPIDirectory: CommunityBenchmarkDirectory {
             }
 
             guard let comparison = scope.comparison else {
-                // Coverage question. Each run contributes to exactly one
-                // summary group (the worker keys on `run.cases[0]`), so
-                // summing `samples` across groups counts every run once.
+                // Coverage question. One run can contribute a summary cell
+                // for every workload case, so summing cell samples can count
+                // the same submission more than once. Count the bounded
+                // feed's distinct matching runs instead.
                 //
                 // The median is deliberately dropped: averaging medians drawn
                 // from different execution configurations and prompt cases
                 // would produce a number that describes no real population.
-                let total = candidates.reduce(0) { $0 + max(0, $1.samples) }
+                let matchingRunIDs = Set(
+                    feed.runs
+                        .filter { $0.matchesCoverage(scope, aliasForRepoID) }
+                        .map(\.submissionID)
+                )
+                guard !matchingRunIDs.isEmpty else {
+                    return .unavailable(.boundedFeed)
+                }
                 return .ready(
                     CommunityObservationSummary(
-                        observationCount: total,
+                        observationCount: matchingRunIDs.count,
                         median: nil,
                         unit: candidates.first?.metric.unit,
                         includesYours: SummaryCell.contains(viewerSlug, in: candidates),
@@ -336,22 +344,45 @@ private struct ContributionsPage: Decodable {
 }
 
 private struct AtomicRun: Decodable {
+    let submissionID: String
     let acceptedAt: String
     let contributor: CommunityBenchmarkContributor?
     let taskType: String
     let model: CommunityModelIdentity.Wire
+    let machine: AtomicMachine?
+    let `protocol`: AtomicProtocol?
 
     enum CodingKeys: String, CodingKey {
+        case submissionID = "submission_id"
         case acceptedAt = "accepted_at"
         case contributor
         case taskType = "task_type"
         case model
+        case machine
+        case `protocol`
     }
 
     /// Distinct-model counting keys on the full identity, so two variants of
     /// one repo are two models, as they are everywhere else.
     var modelKey: String {
         model.identity?.canonicalKey ?? model.repoID ?? "unknown"
+    }
+
+    func matchesCoverage(
+        _ scope: CommunityBenchmarkScope,
+        _ aliasForRepoID: (String) -> String
+    ) -> Bool {
+        guard let identity = model.identity,
+              CommunityWorkload(taskType: taskType) == scope.workload,
+              let machine, machine.matches(scope.macProfile),
+              let `protocol`,
+              `protocol`.id == scope.protocolID,
+              `protocol`.version == scope.protocolVersion
+        else { return false }
+        if let wanted = scope.modelIdentity {
+            return wanted.isCompatible(withPublished: identity)
+        }
+        return aliasForRepoID(identity.repoID) == scope.modelAlias
     }
 }
 

@@ -276,15 +276,38 @@ struct CommunityBenchmarkAPIDirectoryTests {
         #expect(state.unavailableReason == .boundedFeed)
     }
 
-    @Test("Coverage sums every execution/case cell once and publishes no median")
-    func coverageAggregatesWithoutMedian() async {
+    @Test("Coverage without matching run identities is unavailable, never double-counted")
+    func coverageRequiresMatchingRuns() async {
         let directory = Self.directory { Self.ok(Self.ambiguousFeed, url: $0.url!) }
-        // No comparison identity: the Ready question, answered across cells.
         let state = await directory.observations(for: Self.scope("qwen3.5-9b-4bit", .llm))
-        // Only the v2 cells: 4 + 3 + 5. The v1 cell is a different protocol.
-        #expect(state.value?.observationCount == 12)
-        // Averaging medians across dtypes and prompt cases would describe no
-        // real population, so none is offered.
+        #expect(state.value == nil)
+        #expect(state.unavailableReason == .boundedFeed)
+    }
+
+    @Test("Coverage counts one run once when it appears in multiple case cells")
+    func coverageDeduplicatesRunsAcrossCases() async throws {
+        var object = try #require(
+            JSONSerialization.jsonObject(with: Data(Self.publicFeed.utf8))
+                as? [String: Any]
+        )
+        var summary = try #require(object["summary"] as? [[String: Any]])
+        var secondCase = summary[0]
+        secondCase["case_id"] = "pp2048-tg512"
+        summary.insert(secondCase, at: 1)
+        object["summary"] = summary
+        let body = try #require(
+            String(
+                data: JSONSerialization.data(withJSONObject: object),
+                encoding: .utf8
+            )
+        )
+        let directory = Self.directory { Self.ok(body, url: $0.url!) }
+
+        let state = await directory.observations(
+            for: Self.scope("qwen3.5-9b-4bit", .llm)
+        )
+
+        #expect(state.value?.observationCount == 1)
         #expect(state.value?.median == nil)
         #expect(state.value?.isBounded == true)
     }
@@ -317,7 +340,9 @@ struct CommunityBenchmarkAPIDirectoryTests {
         }
         let state = await directory.observations(for: Self.scope("qwen3.5-9b-4bit", .llm))
         let summary = try? #require(state.value)
-        #expect(summary?.observationCount == 7)
+        // The trimmed fixture carries one matching run even though its summary
+        // sample count is seven. Run identities, not case cells, are counted.
+        #expect(summary?.observationCount == 1)
         #expect(summary?.unit == "tok/s")
         // No comparison identity was supplied, so this is the coverage
         // question. A median would have to be picked from (or averaged over)
@@ -327,7 +352,7 @@ struct CommunityBenchmarkAPIDirectoryTests {
 
         #expect(
             CommunityContributionBranch.select(from: state)
-                == .strengthen(observationCount: 7, isAtLeast: true)
+                == .strengthen(observationCount: 1, isAtLeast: true)
         )
     }
 
@@ -380,7 +405,7 @@ struct CommunityBenchmarkAPIDirectoryTests {
             protocolVersion: 2,
             macProfile: CommunityMacProfile(chip: "Apple M4 Max", memoryGiB: 48)
         )
-        #expect(await directory.observations(for: other).value?.observationCount == 3)
+        #expect(await directory.observations(for: other).unavailableReason == .boundedFeed)
     }
 
     // MARK: - Table
