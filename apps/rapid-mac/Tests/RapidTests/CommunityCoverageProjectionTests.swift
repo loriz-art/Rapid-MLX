@@ -93,6 +93,7 @@ struct CommunityCoverageProjectionTests {
         )
         #expect(gaps.count == 1)
         #expect(gaps.first?.observationCount == 2)
+        #expect(gaps.first?.isBounded == true)
         #expect(gaps.first?.workload == .image)
     }
 

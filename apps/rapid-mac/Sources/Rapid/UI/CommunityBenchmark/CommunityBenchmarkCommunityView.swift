@@ -374,7 +374,11 @@ struct CommunityBenchmarkCommunityView: View {
                 .foregroundStyle(RapidTheme.textSecondary)
                 .frame(width: 130, alignment: .trailing)
 
-            Text(row.summary.median.map { String(format: "%.1f", $0) } ?? "—")
+            Text(
+                row.summary.median.map {
+                    metricText($0, unit: row.summary.unit)
+                } ?? "—"
+            )
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .monospacedDigit()
                 .foregroundStyle(RapidTheme.textPrimary)
@@ -399,9 +403,17 @@ struct CommunityBenchmarkCommunityView: View {
     private func rangeText(_ summary: CommunityObservationSummary) -> String {
         guard let low = summary.observedMinimum else { return "—" }
         guard let high = summary.observedMaximum, high != low else {
-            return String(format: "%.1f", low)
+            return metricText(low, unit: summary.unit)
         }
-        return String(format: "%.1f – %.1f", low, high)
+        let values = String(format: "%.1f – %.1f", low, high)
+        guard let unit = summary.unit, !unit.isEmpty else { return values }
+        return "\(values) \(unit)"
+    }
+
+    private func metricText(_ value: Double, unit: String?) -> String {
+        let number = String(format: "%.1f", value)
+        guard let unit, !unit.isEmpty else { return number }
+        return "\(number) \(unit)"
     }
 
     // MARK: - Contribution (secondary)
@@ -518,14 +530,23 @@ struct CommunityBenchmarkCommunityView: View {
                 format: String(localized: "No one has published this model on an %1$@ yet."),
                 macProfile.displayName
             )
-            : String(
-                format: String(localized: "Only %1$d published %2$@ on an %3$@ so far."),
-                gap.observationCount,
-                gap.observationCount == 1
-                    ? String(localized: "result")
-                    : String(localized: "results"),
-                macProfile.displayName
-            )
+            : gap.isBounded
+                ? String(
+                    format: String(localized: "At least %1$d recent published %2$@ on an %3$@."),
+                    gap.observationCount,
+                    gap.observationCount == 1
+                        ? String(localized: "result")
+                        : String(localized: "results"),
+                    macProfile.displayName
+                )
+                : String(
+                    format: String(localized: "%1$d published %2$@ on an %3$@ so far."),
+                    gap.observationCount,
+                    gap.observationCount == 1
+                        ? String(localized: "result")
+                        : String(localized: "results"),
+                    macProfile.displayName
+                )
         let readiness = gap.isDownloaded
             ? String(localized: "Already downloaded.")
             : gap.downloadSizeGB.map {

@@ -355,6 +355,9 @@ struct CommunityCoverageGap: Hashable, Sendable, Identifiable {
     let modelAlias: String
     let workload: CommunityWorkload
     let observationCount: Int
+    /// True when the count came from a newest-N public feed and is therefore
+    /// a lower bound rather than an exact all-time total.
+    let isBounded: Bool
     /// Whether the model fits this Mac, as reported by the benchmark catalog.
     let fitsThisMac: Bool
     let isDownloaded: Bool
@@ -362,6 +365,26 @@ struct CommunityCoverageGap: Hashable, Sendable, Identifiable {
     let downloadSizeGB: Double?
     /// Memory the model needs, when the catalog knows it.
     let requiredMemoryGB: Int?
+
+    init(
+        modelAlias: String,
+        workload: CommunityWorkload,
+        observationCount: Int,
+        isBounded: Bool = true,
+        fitsThisMac: Bool,
+        isDownloaded: Bool,
+        downloadSizeGB: Double?,
+        requiredMemoryGB: Int?
+    ) {
+        self.modelAlias = modelAlias
+        self.workload = workload
+        self.observationCount = observationCount
+        self.isBounded = isBounded
+        self.fitsThisMac = fitsThisMac
+        self.isDownloaded = isDownloaded
+        self.downloadSizeGB = downloadSizeGB
+        self.requiredMemoryGB = requiredMemoryGB
+    }
 
     var id: String { "\(modelAlias)#\(workload.rawValue)" }
 
