@@ -22,6 +22,11 @@ struct CommunityPublicationState: Equatable, Sendable {
     /// it because of a local disk problem would be the client's own mistake.
     private(set) var sessionContributor: CommunityBenchmarkContributor?
 
+    /// Server-confirmed receipts retained for this app session even when the
+    /// CLI could not persist its local receipt file. This keeps the accepted
+    /// run visibly Published and prevents an accidental second publish offer.
+    private(set) var sessionReceipts: [String: CommunityBenchmarkReceipt] = [:]
+
     /// Counts this installation *knows* are at least true, because the server
     /// accepted its submissions into those scopes — **one per scope**.
     ///
@@ -100,6 +105,7 @@ struct CommunityPublicationState: Equatable, Sendable {
     mutating func recordPublication(
         receipt: CommunityBenchmarkReceipt,
         receiptSaved: Bool,
+        runID: String? = nil,
         scope: CommunityBenchmarkScope?,
         observations: CommunityDataState<CommunityObservationSummary>,
         now: Date = Date()
@@ -109,11 +115,14 @@ struct CommunityPublicationState: Equatable, Sendable {
         if let contributor = receipt.contributor {
             sessionContributor = contributor
         }
+        if let runID {
+            sessionReceipts[runID] = receipt
+        }
 
         var outcome = Outcome(observations: observations)
         if !receiptSaved {
             outcome.receiptNotSavedWarning = String(
-                localized: "This Mac couldn’t save its local copy of the receipt, so My Results may still show this run as Local. The published version is correct."
+                localized: "Published successfully, but this Mac couldn’t save its local receipt. Rapid will keep this run marked Published for this session; the public version is correct."
             )
         }
 
@@ -174,6 +183,7 @@ struct CommunityPublicationState: Equatable, Sendable {
         var outcome = recordPublication(
             receipt: receipt,
             receiptSaved: receiptSaved,
+            runID: context.runID,
             scope: context.scope,
             observations: context.observations,
             now: now

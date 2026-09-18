@@ -277,7 +277,7 @@ struct CommunityBenchmarkContributor: Decodable, Hashable, Sendable {
     }
 }
 
-struct CommunityBenchmarkReceipt: Decodable, Identifiable {
+struct CommunityBenchmarkReceipt: Decodable, Identifiable, Equatable, Sendable {
     let submissionID: String
     let alreadyExists: Bool
     let acceptedAt: String
@@ -1850,7 +1850,7 @@ struct CommunityBenchmarkView: View {
                 scope: scope,
                 branch: branch,
                 observations: observations,
-                receipt: receipts[result.id],
+                receipt: effectiveReceipts[result.id],
                 isPublishing: sharingRunID == result.id,
                 isNarrow: isNarrow,
                 onPublish: { prepareShare(result) },
@@ -1904,7 +1904,7 @@ struct CommunityBenchmarkView: View {
     private var myResultsTab: some View {
         CommunityBenchmarkMyResultsView(
             results: results,
-            receipts: receipts,
+            receipts: effectiveReceipts,
             aliasForRepo: alias(for:),
             workloadForResult: { result in
                 CommunityWorkload(
@@ -1913,11 +1913,17 @@ struct CommunityBenchmarkView: View {
             },
             contributor: knownContributor,
             publishedTotals: contributorTotals,
-            localOnlyCount: results.filter { receipts[$0.id] == nil && $0.isCompleted }.count,
+            localOnlyCount: results.filter {
+                effectiveReceipts[$0.id] == nil && $0.isCompleted
+            }.count,
             sharingRunID: sharingRunID,
             onPublish: prepareShare,
             onRunFirstBenchmark: { tab = .run }
         )
+    }
+
+    private var effectiveReceipts: [String: CommunityBenchmarkReceipt] {
+        receipts.merging(publication.sessionReceipts) { persisted, _ in persisted }
     }
 
     // MARK: - Community

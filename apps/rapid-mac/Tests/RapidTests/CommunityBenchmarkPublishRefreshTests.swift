@@ -81,13 +81,14 @@ struct CommunityBenchmarkPublishRefreshTests {
     func identitySurvivesAFailedLocalWrite() {
         var state = CommunityPublicationState()
         let outcome = state.recordPublication(
-            receipt: Self.receipt(alreadyExists: false), receiptSaved: false,
+            receipt: Self.receipt(alreadyExists: false), receiptSaved: false, runID: "run-123",
             scope: Self.scope, observations: Self.ready(7), now: Self.publishedAt
         )
         // The pseudonym came from the server. Losing it because this Mac could
         // not write a file would be the client's own mistake.
         #expect(state.sessionContributor?.slug == "swift-otter-4417")
         #expect(state.sessionContributor?.name == "swift-otter")
+        #expect(state.sessionReceipts["run-123"]?.submissionID == "sub-1")
         // The upload still happened, so the aggregate still moves…
         #expect(outcome.observations.value?.observationCount == 8)
         // …and the missing local copy is surfaced rather than leaving My

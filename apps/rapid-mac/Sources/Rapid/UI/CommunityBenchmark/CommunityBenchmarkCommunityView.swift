@@ -380,7 +380,14 @@ struct CommunityBenchmarkCommunityView: View {
                 .foregroundStyle(RapidTheme.textPrimary)
                 .frame(width: 80, alignment: .trailing)
 
-            Text("\(row.summary.observationCount)")
+            Text(
+                row.summary.isBounded
+                    ? String(
+                        format: String(localized: "at least %1$d"),
+                        row.summary.observationCount
+                    )
+                    : "\(row.summary.observationCount)"
+            )
                 .font(RapidFont.metric)
                 .foregroundStyle(RapidTheme.textSecondary)
                 .frame(width: 104, alignment: .trailing)
