@@ -5133,8 +5133,15 @@ def test_cli_run_streams_progress_to_stderr_only_in_text_mode(
     assert json.loads(captured.out) == {"run_id": "abc-123", "measurements": []}
 
 
-def test_progress_observers_cannot_break_a_benchmark() -> None:
+def test_progress_observers_cannot_break_a_benchmark(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     """UI/logging adapters are best-effort and may disappear mid-run."""
+
+    community_cli._tagged_event_to_stderr({"stage": "measure"})
+    assert capsys.readouterr().err == (
+        f'{community_cli.PROGRESS_TAG}{{"stage":"measure"}}\n'
+    )
 
     class NotJSON:
         pass
