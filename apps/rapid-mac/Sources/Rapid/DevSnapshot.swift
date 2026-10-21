@@ -730,15 +730,12 @@ enum DevSnapshot {
         // The captures above review Chat and Launch at 900x640 and at the
         // 720x560 window floor, which were the sizes the v1.0 pass was
         // signed off at. Slice 1 is reviewed at three DIFFERENT widths —
-        // 1440, 1000 and 720 — because that is where the lifecycle band
-        // changes shape, and a 900pt capture would silently review only
-        // its middle step.
+        // 1440, 1000 and 720 — the three detail-pane breakpoints — so a
+        // 900pt capture cannot silently review only the middle step.
         //
         // Chat and Images are captured at every width in both
-        // appearances. The band is captured separately at all three
-        // widths: a live ``ContentView`` can only show whichever state
-        // the harness is actually in, and staging a real multi-gigabyte
-        // download is not something a capture run can do.
+        // appearances. The composer's load status is captured separately
+        // at all three widths, with readiness injected (see below).
         let ui2Widths: [CGFloat] = [1440, 1000, 720]
         let ui2Appearances: [(NSAppearance.Name, String)] = [(.aqua, "light"), (.darkAqua, "dark")]
 
@@ -798,50 +795,72 @@ enum DevSnapshot {
         }
         imageGen.aspect = .square
 
-        // The band, driven directly by the two states that open it, at
-        // each of its three heights. Rendered over a stub transcript so
-        // the graphite-against-canvas separation is reviewable rather
-        // than the band floating on nothing.
-        func bandProof(_ readiness: ModelReadiness, width: CGFloat) -> AnyView {
+        // The composer's load status, driven directly by the states that
+        // open it, on the real chat surface at each detail-pane width. A
+        // live ``ContentView`` can only show whichever state the harness is
+        // actually in, and staging a multi-gigabyte download is not
+        // something a capture run can do — so readiness and the progress
+        // snapshot are injected.
+        let gib: Int64 = 1 << 30
+        func composerProof(
+            _ readiness: ModelReadiness,
+            progress: ModelReadiness.ProgressSnapshot?,
+            width: CGFloat
+        ) -> AnyView {
             AnyView(
-                VStack(spacing: 0) {
-                    LifecycleBand(readiness: readiness, width: width)
-                    Spacer(minLength: 0)
-                }
-                .frame(width: width, height: LifecycleBand.height(for: width) + 80)
+                ChatView(
+                    viewModel: chat,
+                    server: server,
+                    alias: .constant(readiness.alias ?? ""),
+                    readiness: readiness,
+                    loadProgress: progress
+                )
+                .environment(downloads)
+                .environment(quickstart)
+                .frame(width: width, height: 640)
                 .background(RapidTheme.surfaceCanvas)
                 .tint(RapidTheme.brandAmber)
             )
         }
-        let bandStates: [(String, ModelReadiness)] = [
-            ("downloading", .downloading(
-                alias: "qwen3.5-9b-4bit",
-                detail: "1.2 GB of 5.0 GB · 8.4 MB/s · 7 min left",
-                fraction: 0.24
-            )),
-            // No fraction: the indeterminate case, which must render an
-            // honest bare track rather than a bar pinned at zero.
-            ("starting", .starting(
-                alias: "bonsai-1.7b-2bit",
-                detail: "Loading the model into memory…"
-            )),
+        let composerStates: [(String, ModelReadiness, ModelReadiness.ProgressSnapshot?)] = [
+            ("downloading", .downloading(alias: "qwen3.5-4b-4bit", detail: nil, fraction: 0.59),
+             .init(activity: .downloading, fraction: 0.59,
+                   bytesDownloaded: gib * 17 / 10, totalBytes: gib * 29 / 10,
+                   etaText: "< 1 min left")),
+            // Bytes but no total: the indeterminate download, which must
+            // say what has arrived without inventing a percentage.
+            ("downloading-unknown-total", .downloading(alias: "qwen3.5-4b-4bit", detail: nil, fraction: nil),
+             .init(activity: .downloading, bytesDownloaded: gib * 29 / 10)),
+            // A cached start: the monitor reports ~1.0, which must NOT
+            // surface as a percentage while the model loads.
+            ("loading", .starting(alias: "qwen3.5-4b-4bit", detail: nil),
+             .init(activity: .loading, fraction: 1.0,
+                   bytesDownloaded: gib * 29 / 10, totalBytes: gib * 29 / 10)),
+            ("failed", .failed(
+                alias: "qwen3.5-4b-4bit",
+                message: "The model process exited while loading. Retry, or open the startup log for details.",
+                action: .retry(alias: "qwen3.5-4b-4bit")
+            ), nil),
+            ("long-alias", .downloading(
+                alias: "mlx-community/Qwen3.5-Coder-30B-A3B-Instruct-Distill-4bit-dwq-v2",
+                detail: nil, fraction: 0.12
+            ), .init(activity: .downloading, fraction: 0.12,
+                     bytesDownloaded: gib * 2, totalBytes: gib * 16,
+                     etaText: "1 h 4 min left")),
         ]
         let ui2DetailWidths: [(window: CGFloat, detail: CGFloat)] = [
             (1440, RapidTheme.Layout.Breakpoint.wide),
             (1000, RapidTheme.Layout.Breakpoint.mid),
             (720, RapidTheme.Layout.Breakpoint.floor),
         ]
-        for (label, state) in bandStates {
+        for (label, state, progress) in composerStates {
             for widths in ui2DetailWidths {
-                let size = CGSize(
-                    width: widths.detail,
-                    height: LifecycleBand.height(for: widths.detail) + 80
-                )
+                let size = CGSize(width: widths.detail, height: 640)
                 for (appearance, mode) in ui2Appearances {
                     renderHosted(
-                        bandProof(state, width: widths.detail), size: size,
+                        composerProof(state, progress: progress, width: widths.detail), size: size,
                         appearance: appearance,
-                        to: "\(dir)/ui2-band-\(label)-\(Int(widths.window))-\(mode).png"
+                        to: "\(dir)/ui2-composer-\(label)-\(Int(widths.window))-\(mode).png"
                     )
                 }
             }

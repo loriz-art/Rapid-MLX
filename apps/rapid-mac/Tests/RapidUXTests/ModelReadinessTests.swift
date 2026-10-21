@@ -950,19 +950,36 @@ struct ModelReadinessTests {
     /// The first draft of this suite asserted the alias in EVERY named
     /// state's placeholder, which contradicted ``testReadyIsQuiet`` — the
     /// implementation was right and the expectation was wrong.
+    ///
+    /// Downloading and starting are the same rule from the other side: the
+    /// composer's own load status names the model one row above the field,
+    /// so the placeholder says the other half — that typing is fine now.
     @Test
     func testPlaceholderNamesTheModelOnlyWhileItBlocksSending() {
         let blocking: [ModelReadiness] = [
             .needsDownload(alias: alias, sizeText: nil),
             .needsStart(alias: alias),
-            .downloading(alias: alias, detail: nil, fraction: nil),
-            .starting(alias: alias, detail: nil),
         ]
         for state in blocking {
             XCTAssertFalse(state.sendAllowed)
             XCTAssertTrue(
                 state.composerPlaceholder.contains(alias),
                 "blocking placeholder should name the model: \(state.composerPlaceholder)"
+            )
+        }
+        let working: [ModelReadiness] = [
+            .downloading(alias: alias, detail: nil, fraction: nil),
+            .starting(alias: alias, detail: nil),
+        ]
+        for state in working {
+            XCTAssertFalse(state.sendAllowed)
+            XCTAssertTrue(
+                ComposerLoadStatus.resolve(readiness: state, progress: nil)?.detail == alias,
+                "the composer load status must name the model"
+            )
+            XCTAssertFalse(
+                state.composerPlaceholder.contains(alias),
+                "the load status already names the model: \(state.composerPlaceholder)"
             )
         }
         XCTAssertEqual(

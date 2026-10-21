@@ -164,15 +164,29 @@ enum ModelReadiness: Equatable {
         var activity: DownloadProgress.StartupActivity
         var subtitle: String?
         var fraction: Double?
+        /// Bytes on disk, only once the cache monitor has really observed
+        /// them. The composer formats "1.7 GB of 2.9 GB" from these rather
+        /// than re-parsing ``subtitle``.
+        var bytesDownloaded: Int64?
+        var totalBytes: Int64?
+        /// ``DownloadProgress/etaText`` — already withheld until the rate
+        /// estimate is stable, so a present value is one we may show.
+        var etaText: String?
 
         init(
             activity: DownloadProgress.StartupActivity,
             subtitle: String? = nil,
-            fraction: Double? = nil
+            fraction: Double? = nil,
+            bytesDownloaded: Int64? = nil,
+            totalBytes: Int64? = nil,
+            etaText: String? = nil
         ) {
             self.activity = activity
             self.subtitle = subtitle
             self.fraction = fraction
+            self.bytesDownloaded = bytesDownloaded
+            self.totalBytes = totalBytes
+            self.etaText = etaText
         }
     }
 
@@ -529,8 +543,10 @@ enum ModelReadiness: Equatable {
         case .needsDownload(let a, _):  return String(localized: "Download \(a) first")
         case .needsStart(let a),
              .unknownModel(let a):      return String(localized: "Start \(a) first")
-        case .downloading(let a, _, _): return String(localized: "Downloading \(a)…")
-        case .starting(let a, _):       return String(localized: "Starting \(a)…")
+        // The composer's load status already names the model and the step
+        // directly above the field; the placeholder says the other half —
+        // that typing is fine now.
+        case .downloading, .starting:   return String(localized: "You can type while the model gets ready…")
         case .ready:                    return String(localized: "Send a message…")
         case .failed:                   return String(localized: "Retry to continue")
         }

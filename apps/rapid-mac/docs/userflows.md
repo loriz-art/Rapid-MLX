@@ -132,12 +132,15 @@ identifiers (`ChatView.swift:1275`, `actionIdentifier`): **Copy**, **Edit**
    (`ModelPickerBar.swift:1440`) and is disambiguated from the composer's "Stop
    response" (see the comment at `:1442`).
 3. Readiness gating for image/audio/chat is centralised in `ModelReadiness`;
-   a readiness banner offers the switch action (`Readiness.Action`,
-   `Readiness.Band`).
+   a readiness banner offers the switch action (`Readiness.Action`). In chat,
+   download, load and a failed start render inside the composer card instead
+   (`Composer.LoadStatus`, `Composer.LoadProgress`); a failed start keeps its
+   recovery button there under the same `Readiness.Action` identifier.
 
 **Touches.** `UI/ModelPickerBar.swift`, `Server/ServerManager.swift`,
 `Server/ModelCatalog.swift`, `UI/ModelReadiness.swift`,
-`UI/ReadinessBanner.swift`, `UI/ReadinessModelStart.swift`.
+`UI/ReadinessBanner.swift`, `UI/ComposerLoadStatus.swift`,
+`UI/ReadinessModelStart.swift`.
 
 ---
 
@@ -625,8 +628,8 @@ Prompt.Confirm,Prompt.Cancel}`, `Sidebar.DeleteFolder.{Confirm,Keep}`.
 `ModelPickerBar.Context.{Download,Delete}.<alias>`,
 `ModelPickerBar.CustomAlias.{Open,Field,Use,Cancel}`,
 `ModelPickerBar.Delete.{Confirm,Cancel}`. Readiness:
-`UI/ReadinessBanner.swift` `Readiness.Action`; `UI/Components/LifecycleBand.swift`
-`Readiness.Band`. Downloads: `UI/DownloadStrip.swift`
+`UI/ReadinessBanner.swift` `Readiness.Action`; `UI/Components/ComposerLoadStatusView.swift`
+`Composer.LoadStatus`, `Composer.LoadProgress`. Downloads: `UI/DownloadStrip.swift`
 `DownloadStrip.{Cancel,Dismiss}.<alias>`.
 
 **Quickstart / onboarding — `UI/QuickstartView.swift`:**

@@ -8,8 +8,8 @@ import Testing
 ///
 /// The claim this slice makes is narrow and checkable: the shell, Chat
 /// and Images draw from one refreshed token set; the selected row is
-/// legible by something other than a hue; the lifecycle band flexes only
-/// in height; and not one production string, action, binding or
+/// legible by something other than a hue; model loading lives in the
+/// composer rather than a band across the top; and not one production string, action, binding or
 /// accessibility identifier moved. These tests hold that claim. What is
 /// a matter of taste — whether the mineral canvas actually feels calmer
 /// than the bone one — is held by the screenshots, not here.
@@ -251,153 +251,105 @@ struct CoreWorkspaceVisualFoundationTests {
         }
     }
 
-    // MARK: - The band flexes in height only
+    // MARK: - Loading lives in the composer
 
-    /// The reason the band is horizontal rather than a side column: chat
-    /// has a fixed 720pt reading measure, and at the 720pt window floor a
-    /// vertical priority area would take width straight out of the
-    /// conversation. Turned sideways, width is never contested — so the
-    /// only thing allowed to respond to window width is the height.
-    @Test("The band steps 132 / 112 / 44 across the three verified widths")
-    func bandHeightSteps() {
-        #expect(LifecycleBand.height(for: RapidTheme.Layout.Breakpoint.wide) == 132)
-        #expect(LifecycleBand.height(for: RapidTheme.Layout.Breakpoint.mid) == 112)
-        #expect(LifecycleBand.height(for: RapidTheme.Layout.Breakpoint.floor) == 44)
-    }
-
-    /// Monotonic, and bounded at both ends. A window wider than 1440 or
-    /// narrower than 720 must not fall off a cliff into a zero or a
-    /// runaway height.
-    @Test("Band height is monotonic and bounded outside the verified widths")
-    func bandHeightIsMonotonic() {
-        let widths: [CGFloat] = [320, 640, 719, 720, 999, 1000, 1439, 1440, 2560, 5120]
-        var previous = LifecycleBand.height(for: widths[0])
-        for width in widths.dropFirst() {
-            let height = LifecycleBand.height(for: width)
-            #expect(height >= previous, "height fell going from a narrower width to \(width)")
-            #expect(height >= 44 && height <= 132, "height \(height) at width \(width) is out of range")
-            previous = height
-        }
-    }
-
-    /// Only the floor collapses to the single-line form, and the floor is
-    /// where the detail line is dropped — so this predicate decides
-    /// whether a string disappears and is worth pinning on its own.
-    @Test("Only the compact step collapses the band to one line")
-    func bandCompactStep() {
-        #expect(LifecycleBand.isCompact(width: RapidTheme.Layout.Breakpoint.floor))
-        #expect(!LifecycleBand.isCompact(width: RapidTheme.Layout.Breakpoint.mid))
-        #expect(!LifecycleBand.isCompact(width: RapidTheme.Layout.Breakpoint.wide))
-    }
-
-    /// The percentage is the one thing the band formats itself, so its
-    /// edges are its own to get right. The byte monitor can overshoot on
-    /// the final chunk; "101%" would be the band contradicting the file
-    /// it just finished downloading.
-    @Test("Band percentage clamps and rounds")
-    func bandPercentText() {
-        #expect(LifecycleBand.percentText(for: nil) == nil)
-        #expect(LifecycleBand.percentText(for: 0) == "0%")
-        #expect(LifecycleBand.percentText(for: 0.594) == "59%")
-        #expect(LifecycleBand.percentText(for: 1) == "100%")
-        #expect(LifecycleBand.percentText(for: 1.04) == "100%")
-        #expect(LifecycleBand.percentText(for: -0.2) == "0%")
-    }
-
-    // MARK: - The band and the banner never speak at once
-
-    /// The band renders the same ``ModelReadiness`` the composer's notice
-    /// does. Showing both would print one fact twice, 400pt apart, in two
-    /// visual languages — so the notice stands down for exactly the
-    /// states the band takes.
-    @Test("The composer notice stands down while the band is open")
-    func bannerSuppressedUnderTheBand() throws {
+    /// One layout for every load — first launch, relaunch, a model switch
+    /// and a reload. The graphite band across the top of chat is gone, and
+    /// nothing may bring a second loading surface back to the chat view.
+    @Test("Chat renders no top-of-surface loading band")
+    func chatHasNoLifecycleBand() throws {
         let source = try strippedSource("Sources/Rapid/UI/ChatView.swift")
+        #expect(!source.contains("LifecycleBand"))
+        #expect(!source.contains("RapidTheme.surfaceBand"))
         #expect(
-            source.contains("if!readiness.isReady&&!showsLifecycleBand{"),
-            "The readiness banner no longer stands down while the band is open."
-        )
-        #expect(
-            source.contains("varshowsLifecycleBand:Bool{readiness.isWorking}"),
-            """
-            The band's gate changed. It must be exactly ModelReadiness.isWorking: \
-            anything wider would open a graphite band over a decision the user \
-            has not made yet, and streaming in particular must never open one.
-            """
+            !FileManager.default.fileExists(
+                atPath: Self.packageRoot
+                    .appendingPathComponent("Sources/Rapid/UI/Components/LifecycleBand.swift").path
+            ),
+            "LifecycleBand.swift is back; chat loading has exactly one layout, in the composer."
         )
     }
 
-    /// Suppressing the banner is only safe because the states it covers
-    /// carry no renderable action — otherwise a control (and its
-    /// `Readiness.Action` identifier) would vanish with it.
-    @Test("The states the band covers carry no renderable action")
-    func bandStatesHaveNoRenderableAction() {
-        let banded: [ModelReadiness] = [
-            .downloading(alias: "gemma-4-26b-4bit", detail: "8.4 GB of 14.2 GB", fraction: 0.59),
-            .starting(alias: "gemma-4-26b-4bit", detail: "Loading the model into memory…"),
-        ]
-        for state in banded {
-            #expect(state.isWorking, "\(state) should be a banded state")
-            #expect(
-                state.action == nil,
-                """
-                \(state) now offers an action. The composer notice is suppressed \
-                while the band is open, so that button — and the Readiness.Action \
-                identifier the golden flows address it by — would disappear from \
-                the surface entirely.
-                """
-            )
+    /// The status rows sit inside the one composer card, ABOVE the one
+    /// compose field — never in place of it. A conditional that swapped the
+    /// field out would cost the draft, the caret and focus the moment the
+    /// model became ready.
+    @Test("The load status is a sibling above the single compose field")
+    func loadStatusSitsAboveTheField() throws {
+        let source = try strippedSource("Sources/Rapid/UI/ChatView.swift")
+        let composeBar = try #require(source.range(of: "privatevarcomposeBar:someView{"))
+        let tail = source[composeBar.upperBound...]
+        let status = try #require(tail.range(of: "ComposerLoadStatusView("))
+        let field = try #require(tail.range(of: "ComposeField("))
+        #expect(status.lowerBound < field.lowerBound)
+        #expect(
+            tail.components(separatedBy: "ComposeField(").count - 1 == 1,
+            "The compose bar must build exactly one ComposeField in every state."
+        )
+        #expect(source.contains("ComposerProgressRail(progress:loadStatus.progress"))
+    }
+
+    /// The notice above the card stands down exactly while the composer's
+    /// own slot is speaking, so one fact is never printed twice.
+    @Test("The readiness notice stands down while the composer slot speaks")
+    func bannerStandsDownForTheComposerSlot() throws {
+        let source = try strippedSource("Sources/Rapid/UI/ChatView.swift")
+        #expect(source.contains("if!readiness.isReady&&loadStatus==nil{"))
+        // A failed start is shown in the slot with its own message; the raw
+        // turn error must not repeat it above the card.
+        #expect(source.contains("}elseifloadStatus?.isFailure!=true,"))
+    }
+
+    /// Every state the composer slot takes over either carries no action,
+    /// or carries one the slot renders itself — so no control, and no
+    /// `Readiness.Action` identifier, disappears with the banner.
+    @Test("The slot keeps every recovery action the banner offered")
+    func slotKeepsRecoveryActions() throws {
+        let failed = ModelReadiness.failed(
+            alias: "gemma-4-26b-4bit", message: "Couldn't start",
+            action: .retry(alias: "gemma-4-26b-4bit")
+        )
+        let status = try #require(ComposerLoadStatus.resolve(readiness: failed, progress: nil))
+        #expect(status.action == failed.action)
+        let view = try strippedSource("Sources/Rapid/UI/Components/ComposerLoadStatusView.swift")
+        #expect(view.contains(".accessibilityIdentifier(\"Readiness.Action\")"))
+        #expect(view.contains(".accessibilityIdentifier(\"Readiness.ExportDiagnostics\")"))
+
+        for working in [
+            ModelReadiness.downloading(alias: "gemma-4-26b-4bit", detail: nil, fraction: 0.59),
+            .starting(alias: "gemma-4-26b-4bit", detail: nil),
+        ] {
+            #expect(working.action == nil)
+            #expect(ComposerLoadStatus.resolve(readiness: working, progress: nil)?.action == nil)
         }
     }
 
-    /// Everything that is NOT a banded state keeps its notice, and the
-    /// actionable ones keep their button.
-    @Test("Decision states keep the composer notice and its action")
+    /// Decision states keep the notice and its button; ready shows nothing.
+    @Test("Decision states and ready never open the composer slot")
     func decisionStatesKeepTheirNotice() {
-        let decisions: [ModelReadiness] = [
+        let quiet: [ModelReadiness] = [
             .noModel,
             .needsDownload(alias: "gemma-4-26b-4bit", sizeText: "~14.2 GB"),
             .needsStart(alias: "gemma-4-26b-4bit"),
             .unknownModel(alias: "something-custom"),
-            .failed(alias: "gemma-4-26b-4bit", message: "Couldn't start", action: .retry(alias: "gemma-4-26b-4bit")),
+            .sharingCompute,
+            .engineMissing,
+            .ready(alias: "gemma-4-26b-4bit"),
         ]
-        for state in decisions {
-            #expect(!state.isWorking, "\(state) must not open the band")
-            #expect(!state.isReady, "\(state) must still show a notice")
+        for state in quiet {
+            #expect(ComposerLoadStatus.resolve(readiness: state, progress: nil) == nil, "\(state)")
         }
     }
 
-    // MARK: - The band invents no copy
-
-    /// Every sentence in the band is read off ``ModelReadiness``. The
-    /// band formats exactly one thing of its own — the percentage — and
-    /// a source guard is the only way to keep a stray literal out of a
-    /// view this test cannot instantiate.
-    @Test("The band renders readiness copy and nothing of its own")
-    func bandUsesOnlyReadinessCopy() throws {
-        let raw = try String(
-            contentsOf: Self.packageRoot
-                .appendingPathComponent("Sources/Rapid/UI/Components/LifecycleBand.swift"),
-            encoding: .utf8
-        )
-        let source = CapabilityChipRenderGateSourceGuardTests.stripCommentsAndWhitespace(raw)
-        #expect(source.contains("readiness.headline"))
-        #expect(source.contains("readiness.detail"))
-        #expect(source.contains("readiness.progressFraction"))
-        #expect(source.contains("readiness.accessibilityLabel"))
-        // The canonicaliser PRESERVES string literals (minus whitespace),
-        // so a hard-coded sentence would survive verbatim. Every Text in
-        // this file must therefore be reading a readiness property; a
-        // `Text("` anywhere means somebody typed copy into the band.
-        #expect(
-            !source.contains("Text(\""),
-            """
-            LifecycleBand has grown a literal string. Every word it shows must \
-            come off ModelReadiness, or the band can describe a moment \
-            differently from the composer placeholder and the Send tooltip that \
-            describe the same one.
-            """
-        )
+    /// Amber is spent on progress only — the rail's fill and the travelling
+    /// segment. The slot's text uses the ordinary ink tiers.
+    @Test("Brand amber appears only on the progress rail")
+    func amberOnlyOnTheRail() throws {
+        let source = try strippedSource("Sources/Rapid/UI/Components/ComposerLoadStatusView.swift")
+        let rail = try #require(source.range(of: "structComposerProgressRail:View{"))
+        #expect(!source[..<rail.lowerBound].contains("brandPrimary"))
+        #expect(!source[..<rail.lowerBound].contains("RapidPrimaryButtonStyle"))
+        #expect(source[rail.lowerBound...].contains("brandPrimary"))
     }
 
     // MARK: - Reduce Motion

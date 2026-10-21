@@ -444,6 +444,14 @@ struct LocalizationTests {
         #expect(String(localized: "Chatting with \(alias)", bundle: zhBundle) == "正在与 qwen3.8-27b-4bit 对话")
         #expect(String(localized: "Download \(alias) first", bundle: zhBundle) == "请先下载 qwen3.8-27b-4bit")
         #expect(String(localized: "Type a message, then Start & Send to start \(alias).", bundle: zhBundle) == "输入消息后，即可启动 qwen3.8-27b-4bit 并发送。")
+        // Composer load status: positional arguments must survive, or the
+        // byte counts would print in the wrong order.
+        let done = "1.7 GB", total = "2.9 GB"
+        #expect(String(localized: "\(done) of \(total)", bundle: zhBundle) == "1.7 GB / 2.9 GB")
+        #expect(String(localized: "\(done) of \(total)", bundle: enBundle) == "1.7 GB of 2.9 GB")
+        #expect(String(localized: "\(total) downloaded", bundle: zhBundle) == "已下载 2.9 GB")
+        #expect(String(localized: "Downloading the model…", bundle: zhBundle) == "正在下载模型…")
+        #expect(String(localized: "You can type while the model gets ready…", bundle: zhBundle) == "模型准备期间可以先输入…")
         #expect(String(localized: "Archived (\(count))", bundle: zhBundle) == "已归档 (3)")
         #expect(String(localized: "\(count) models", bundle: zhBundle) == "3 个模型")
         #expect(String(localized: "Finding video models…", bundle: zhBundle) == "寻找视频模型…")

@@ -1093,7 +1093,10 @@ struct ContentView: View {
         ModelReadiness.ProgressSnapshot(
             activity: progress.startupActivity,
             subtitle: progress.progressSubtitle,
-            fraction: progress.progressFraction
+            fraction: progress.progressFraction,
+            bytesDownloaded: progress.hasDiskObservation ? progress.bytesDownloaded : nil,
+            totalBytes: progress.totalBytes,
+            etaText: progress.etaText
         )
     }
 
@@ -1442,6 +1445,7 @@ struct ContentView: View {
                 alias: $alias,
                 knownNonChatAliases: knownNonChatAliases,
                 readiness: readiness,
+                loadProgress: readiness.isWorking ? progressSnapshot : nil,
                 supportsImageInput: imageAvailability.isAvailable,
                 imageInputUnavailableMessage: imageAvailability.unavailableMessage,
                 onUserModelSelection: selectChatModel,

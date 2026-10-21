@@ -231,6 +231,10 @@ struct ChatView: View {
     /// hero and the composer read their copy off this, so they cannot
     /// describe the same lifecycle differently.
     var readiness: ModelReadiness
+    /// The progress snapshot ``ContentView`` resolved for the same selected
+    /// alias as ``readiness``. Supplies the byte counts and the stable ETA the
+    /// composer's load status shows; never consulted outside a working state.
+    var loadProgress: ModelReadiness.ProgressSnapshot? = nil
     /// Catalog-backed capability shared with launch and request encoding.
     var supportsImageInput: Bool = false
     /// Runtime-backed explanation shown for every attach path when photos are
@@ -285,6 +289,9 @@ struct ChatView: View {
     /// Incremented every time the user tries to send while gated. Drives
     /// the banner's brief emphasis so a blocked Return is never silent.
     @State private var blockedSendAttempts: Int = 0
+    /// True for the moment after a blocked send while the composer's load
+    /// status is showing — the decision-state banner owns its own flash.
+    @State private var loadStatusAttention = false
     @State private var showsAttachmentMenu = false
     @State private var showsConversationInstructions = false
     @AppStorage("chatAgentTipEligible") private var chatAgentTipEligible = false
@@ -343,46 +350,27 @@ struct ChatView: View {
     }
 
     var body: some View {
-        // The reader exists for one value: the surface's own width, which
-        // the lifecycle band needs in order to pick its height on the
-        // FIRST layout pass. Reading it here — where the pane already has
-        // a definite size — rather than letting the band measure itself
-        // is what keeps the band's geometry a pure function of its
-        // inputs, and therefore reproducible in a single-pass capture.
-        GeometryReader { proxy in
-            VStack(spacing: 0) {
-                // The band opens ABOVE the transcript, never between it
-                // and the composer: it is context for the whole surface,
-                // and wedging it into the compose zone is exactly the
-                // treatment that made a multi-gigabyte download read as
-                // an inline footnote. It replaces the readiness banner
-                // for the duration — see ``composeBar`` — rather than
-                // joining it, so the same sentence is never on screen
-                // twice.
-                if showsLifecycleBand {
-                    LifecycleBand(
-                        readiness: readiness,
-                        attentionToken: blockedSendAttempts,
-                        width: proxy.size.width
-                    )
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                if chatAgentTipEligible && !chatAgentTipDismissed {
-                    agentTip
-                }
-                transcript
-                Divider()
-                composeBar
+        VStack(spacing: 0) {
+            if chatAgentTipEligible && !chatAgentTipDismissed {
+                agentTip
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
+            transcript
+            Divider()
+            composeBar
         }
-        .rapidAnimation(RapidMotion.standard, value: showsLifecycleBand)
         .background(RapidTheme.surfaceCanvas)
         // Drop a stale error banner once the server is provably ready.
         .onChange(of: server.state) { _, newState in
             if case .ready = newState { viewModel.clearStaleErrorBanner() }
         }
         .onChange(of: readiness, initial: true) { _, _ in resolveStartAndSend() }
+        // Phase changes only — never a percentage tick. See
+        // ``ComposerLoadStatus/announcement(from:to:)``.
+        .onChange(of: readiness) { old, new in
+            if let text = ComposerLoadStatus.announcement(from: old, to: new) {
+                VoiceOverAnnouncer.announce(text)
+            }
+        }
         .onChange(of: viewModel.startAndSendIntent) { _, _ in resolveStartAndSend() }
         .onChange(of: viewModel.isStreaming) { _, _ in resolveStartAndSend() }
         .onChange(of: messages.map { $0.status.rawValue }, initial: true) { _, _ in
@@ -776,19 +764,20 @@ struct ChatView: View {
         messages.first(where: { $0.id == id })?.content ?? fallback
     }
 
-    /// Whether the lifecycle band owns the current moment.
-    ///
-    /// Exactly the two states in which the app is doing work the user is
-    /// waiting on. Everything else — nothing chosen, not downloaded, not
-    /// running, failed — is a DECISION, and a decision belongs beside the
-    /// control that resolves it, which is the composer's notice slot.
+    /// What the composer's own status slot shows: download, load, or a
+    /// failed start. Nil for every decision state (those keep the readiness
+    /// notice above the card) and for ready.
     ///
     /// Streaming is deliberately absent. A reply arriving is work, but it
     /// is work the user can already see landing token by token, and it
-    /// does not block the surface; opening a graphite band over every
-    /// answer would make the ordinary case of using the product feel like
-    /// an interruption.
-    private var showsLifecycleBand: Bool { readiness.isWorking }
+    /// does not block the surface.
+    private var loadStatus: ComposerLoadStatus? {
+        ComposerLoadStatus.resolve(readiness: readiness, progress: loadProgress)
+    }
+
+    private var composerEdgeEmphasised: Bool {
+        isAttachmentDropTarget || (loadStatusAttention && loadStatus != nil)
+    }
 
     private var emptyState: some View {
         // Optically centred, not geometrically. The composer is a fixed
@@ -855,22 +844,21 @@ struct ChatView: View {
     // MARK: - Compose bar
 
     private var composeBar: some View {
-        VStack(spacing: RapidTheme.Space.sm) {
+        let loadStatus = loadStatus
+        return VStack(spacing: RapidTheme.Space.sm) {
             // Exactly one notice slot. While the model is not ready the
             // readiness banner owns it — it already folds the failure
             // message in, so rendering the raw error underneath would be
             // the same fact twice. Once the model is ready the slot
             // reverts to turn-level errors (a 500 from a healthy server),
             // which readiness has no opinion about.
-            if !readiness.isReady && !showsLifecycleBand {
-                // Suppressed while the band is open. The band renders the
-                // same ``ModelReadiness`` — same headline, same detail,
-                // same fraction — so leaving the banner here as well
-                // would print one fact twice, 400pt apart, in two
-                // different visual languages. Nothing is lost: neither
-                // ``downloading`` nor ``starting`` carries a renderable
-                // action, so no control moves and no identifier goes
-                // missing (see ``ModelReadiness.action``).
+            if !readiness.isReady && loadStatus == nil {
+                // Stands down while the composer's own status slot is
+                // showing a download, a load or a failed start: that slot
+                // renders the same ``ModelReadiness``, so keeping the
+                // banner too would print one fact twice. A failure's
+                // recovery action moves into the slot with it, under the
+                // same `Readiness.Action` identifier.
                 ReadinessBanner(
                     readiness: readiness,
                     attentionToken: blockedSendAttempts,
@@ -878,7 +866,8 @@ struct ChatView: View {
                 )
                 .frame(maxWidth: contentMaxWidth)
                 .frame(maxWidth: .infinity)
-            } else if let error = viewModel.lastError,
+            } else if loadStatus?.isFailure != true,
+                      let error = viewModel.lastError,
                       ModelReadiness.turnErrorApplies(
                           failureAlias: viewModel.lastFailureAlias,
                           selectedAlias: alias
@@ -911,6 +900,23 @@ struct ChatView: View {
             // tall and read as a card that happened to contain a text
             // area; this reads as a text field with controls in it.
             VStack(spacing: RapidTheme.Space.sm - 2) {
+                // Download / load / failed start, in the card the user is
+                // about to type into. A sibling ABOVE the field, never in
+                // its place: the field keeps its structural identity in
+                // every state, so a draft, the caret and focus all survive
+                // the moment the slot closes.
+                if let loadStatus {
+                    ComposerLoadStatusView(
+                        status: loadStatus,
+                        onAction: onReadinessAction,
+                        onExportDiagnostics: {
+                            DiagnosticsBundle.exportViaSavePanel(server: server)
+                        }
+                    )
+                    .padding(.top, RapidTheme.Space.xs)
+                    .padding(.horizontal, RapidTheme.Space.xs)
+                    .transition(.opacity)
+                }
                 if attachmentDraft.hasAttachments {
                     attachmentStrip
                 }
@@ -944,10 +950,36 @@ struct ChatView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: RapidTheme.Radius.input, style: .continuous)
                     .strokeBorder(
-                        isAttachmentDropTarget ? RapidTheme.brandPrimary : RapidTheme.hairlineStrong,
-                        lineWidth: isAttachmentDropTarget ? 2 : 1
+                        composerEdgeEmphasised ? RapidTheme.brandPrimary : RapidTheme.hairlineStrong,
+                        lineWidth: isAttachmentDropTarget ? 2 : (composerEdgeEmphasised ? 1.5 : 1)
                     )
             )
+            // The rail rides the card's top edge, clipped to its corners.
+            // An overlay, so it occupies no layout and its arrival or
+            // departure cannot move the field.
+            .overlay(alignment: .top) {
+                if let loadStatus, loadStatus.progress != .none {
+                    ComposerProgressRail(progress: loadStatus.progress, label: loadStatus.title)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                        .clipShape(
+                            RoundedRectangle(cornerRadius: RapidTheme.Radius.input, style: .continuous)
+                        )
+                        .transition(.opacity)
+                }
+            }
+            .rapidAnimation(RapidMotion.standard, value: loadStatus?.phase)
+            .rapidAnimation(RapidMotion.quick, value: loadStatusAttention)
+            .task(id: blockedSendAttempts) {
+                // A blocked Return while the slot is open briefly lights the
+                // card's edge. Token 0 is the initial value; only a real bump
+                // flashes. Under Reduce Motion the change snaps rather than
+                // fades, but still happens — it answers a keypress.
+                guard blockedSendAttempts > 0, self.loadStatus != nil else { return }
+                loadStatusAttention = true
+                try? await Task.sleep(nanoseconds: 1_400_000_000)
+                guard !Task.isCancelled else { return }
+                loadStatusAttention = false
+            }
             .dropDestination(for: URL.self) { urls, _ in
                 addAttachmentURLs(urls)
             } isTargeted: { targeted in

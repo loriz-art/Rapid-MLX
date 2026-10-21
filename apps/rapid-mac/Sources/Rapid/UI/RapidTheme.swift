@@ -1122,20 +1122,6 @@ enum RapidFont {
     /// footnote attached to the wrong heading.
     static var displaySubtitle: Font { .rapid(size: 14) }
 
-    /// The model name inside the lifecycle band. Between ``pageTitle``
-    /// and ``displayTitle``: the band is a priority surface, but it is
-    /// still chrome around a transcript, not the subject of the window.
-    static var bandTitle: Font { .rapid(size: 21, weight: .semibold) }
-
-    /// The all-caps eyebrow over a band or stage title, and the
-    /// monospaced counters beside it. Monospaced because these values
-    /// tick live (bytes, percent, step counts) and proportional digits
-    /// make a progress line jitter its own width.
-    static var bandEyebrow: Font { .rapid(size: 10, weight: .semibold, design: .monospaced) }
-
-    /// The big amber percentage in the lifecycle band.
-    static var bandMetric: Font { .rapid(size: 34, weight: .semibold, design: .default) }
-
     /// Window / toolbar title.
     static var windowTitle: Font { .rapid(size: 15, weight: .semibold) }
     /// The one big title on a page. Chat empty state, page headers,
