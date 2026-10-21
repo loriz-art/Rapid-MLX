@@ -18,6 +18,7 @@ struct ComposerLayoutBoundsTests {
 
     private static let states: [(String, ModelReadiness, ModelReadiness.ProgressSnapshot?)] = [
         ("needsStart", .needsStart(alias: longAlias), nil),
+        ("stopped", .needsDownload(alias: longAlias, sizeText: nil), nil),
         ("downloading", .downloading(alias: longAlias, detail: nil, fraction: 0.12),
          .init(activity: .downloading, fraction: 0.12,
                bytesDownloaded: gib * 2, totalBytes: gib * 16, etaText: "1 h 4 min left")),
@@ -37,6 +38,13 @@ struct ComposerLayoutBoundsTests {
     ) -> GoldenStage {
         let server = ServerManager(testingState: .starting(alias: Self.longAlias))
         let size = CGSize(width: width, height: 560)
+        let downloads = DownloadManager()
+        if case .downloading = readiness {
+            _ = downloads._testingSeedJob(alias: Self.longAlias)
+        } else if case .needsDownload = readiness {
+            _ = downloads._testingSeedJob(alias: Self.longAlias)
+            downloads._testingFinish(alias: Self.longAlias, status: 15, reason: .uncaughtSignal, wasCancelling: true)
+        }
         return GoldenStage(
             ChatView(
                 viewModel: ChatViewModel(persistsConversations: false),
@@ -46,7 +54,7 @@ struct ComposerLayoutBoundsTests {
                 loadProgress: progress
             )
             .environment(server)
-            .environment(DownloadManager())
+            .environment(downloads)
             .environment(QuickstartCoordinator())
             .frame(width: size.width, height: size.height),
             size: size
@@ -95,6 +103,10 @@ struct ComposerLayoutBoundsTests {
                     "\(name) @\(width): load status \(status) leaves the window"
                 )
                 #expect(stage.treeText().contains(Self.longAlias), "\(name): full name missing from the status label")
+            }
+            if name == "downloading" || name == "stopped" {
+                let action = try #require(stage.frame(of: "Composer.DownloadAction"))
+                #expect(action.minX >= window.minX - 0.5 && action.maxX <= window.maxX + 0.5)
             }
             if name == "failed" {
                 let retry = try #require(stage.frame(of: "Readiness.Action"))

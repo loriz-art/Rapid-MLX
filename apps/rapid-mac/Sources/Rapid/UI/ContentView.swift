@@ -775,6 +775,10 @@ struct ContentView: View {
             // progress visible whichever sidebar destination is selected.
             DownloadStrip(
                 downloads: downloads,
+                composerOwnedAlias: section == .chat && !quickstartVisible
+                    && ContentView.mainAreaBranch(for: server.state) == .chat
+                    && ComposerLoadStatus.ownsDownload(readiness: readiness, status: downloads.job(for: alias)?.status)
+                    ? alias : nil,
                 isResident: { alias in
                     if server.residency.contains(alias) { return true }
                     if case .ready(let readyAlias) = server.state { return readyAlias == alias }

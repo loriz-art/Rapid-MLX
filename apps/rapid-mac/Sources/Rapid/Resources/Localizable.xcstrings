@@ -2,6 +2,76 @@
   "sourceLanguage" : "en",
   "version" : "1.0",
   "strings" : {
+    "Resume the download to chat…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续下载后即可聊天…"
+          }
+        }
+      }
+    },
+    "Stop download of %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止下载 %@"
+          }
+        }
+      }
+    },
+    "Stop download. Cached files are kept for continuing later.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止下载。保留缓存文件，以便稍后继续。"
+          }
+        }
+      }
+    },
+    "Stops the download without deleting cached files. Continuing reuses available cached data.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止下载但保留缓存文件。继续下载时会复用可用的缓存数据。"
+          }
+        }
+      }
+    },
+    "Stop download": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止下载"
+          }
+        }
+      }
+    },
+    "Resume download": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续下载"
+          }
+        }
+      }
+    },
+    "Download stopped": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载已停止"
+          }
+        }
+      }
+    },
     "Text size" : {
       "localizations" : {
         "zh-Hans" : {

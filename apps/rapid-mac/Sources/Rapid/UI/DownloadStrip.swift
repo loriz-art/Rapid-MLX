@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// One-line status strip that lives at the top of the chat surface and
-/// shows any in-flight background downloads. Hidden
-/// when ``DownloadManager.jobs`` has no running entries.
+/// Global bottom strip for background downloads across sidebar destinations.
+/// The visible chat composer may own one task's progress and controls;
+/// only that alias is suppressed here. Other tasks and recovery stay visible.
 ///
 /// v0.5.7 ships this so users can pull a second model in parallel
 /// while ``ServerManager`` keeps serving the model they're chatting
@@ -21,6 +21,7 @@ import SwiftUI
 /// "[Dismiss]" clears a finished job from the row.
 struct DownloadStrip: View {
     @Bindable var downloads: DownloadManager
+    var composerOwnedAlias: String? = nil
     var isResident: (String) -> Bool = { _ in false }
 
     /// Deep-link channel into Settings, resolved optionally so the strip still
@@ -39,6 +40,7 @@ struct DownloadStrip: View {
     /// pathological on a single Mac).
     private var orderedJobs: [DownloadManager.Job] {
         let visible = downloads.jobs.values.filter { job in
+            if job.alias == composerOwnedAlias { return false }
             if case .completed = job.status { return !isResident(job.alias) }
             return true
         }
@@ -173,6 +175,17 @@ struct DownloadStrip: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer()
+                if job.status == .cancelled {
+                    Button(String(localized: "Resume download")) {
+                        guard downloads.job(for: job.alias)?.instanceID == job.instanceID,
+                              job.status == .cancelled else { return }
+                        downloads.retryDownload(alias: job.alias)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!downloads.canRetryDownload(alias: job.alias))
+                    .accessibilityIdentifier("DownloadStrip.Resume.\(job.alias)")
+                }
                 trailingAffordance(for: job)
             }
         }
@@ -247,7 +260,7 @@ struct DownloadStrip: View {
         case .completed:
             return "Downloaded — start from the model picker"
         case .cancelled:
-            return "Cancelled"
+            return String(localized: "Download stopped")
         case .failed(let message):
             return message
         }
@@ -321,8 +334,8 @@ struct DownloadStrip: View {
                     .background(RapidTheme.brandPrimaryTint, in: Circle())
             }
             .buttonStyle(.plain)
-            .help("Cancel download (partial files stay in the HuggingFace cache and can resume on retry).")
-            .accessibilityLabel("Cancel download of \(job.alias)")
+            .help("Stop download. Cached files are kept for continuing later.")
+            .accessibilityLabel("Stop download of \(job.alias)")
             .accessibilityIdentifier("DownloadStrip.Cancel.\(job.alias)")
         case .completed, .cancelled, .failed:
             Button {

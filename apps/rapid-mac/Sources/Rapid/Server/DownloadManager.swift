@@ -588,6 +588,14 @@ final class DownloadManager {
         }
     }
 
+    /// A stopped task becomes resumable only after its old writer is reaped.
+    /// Observing this also refreshes controls when process cleanup completes.
+    func canRetryDownload(alias: String) -> Bool {
+        let trimmed = alias.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let job = jobs[trimmed], job.status != .running else { return false }
+        return processes[trimmed] == nil
+    }
+
     /// Retry a terminal job while preserving the cache-monitor metadata.
     /// Passing a source overrides only the new child process.
     @discardableResult

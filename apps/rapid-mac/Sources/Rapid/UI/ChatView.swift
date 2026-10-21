@@ -772,7 +772,8 @@ struct ChatView: View {
     /// is work the user can already see landing token by token, and it
     /// does not block the surface.
     private var loadStatus: ComposerLoadStatus? {
-        ComposerLoadStatus.resolve(readiness: readiness, progress: loadProgress)
+        ComposerLoadStatus.resolve(readiness: readiness, progress: loadProgress,
+                                   downloadStatus: downloads.job(for: alias)?.status)
     }
 
     private var composerEdgeEmphasised: Bool {
@@ -844,9 +845,11 @@ struct ChatView: View {
     /// bytes, error and recovery live in the composer; printing them a
     /// second time above it made the two surfaces compete. Decision states
     /// (choose / download / start) keep their hero copy.
-    private var emptyStateSubtitle: String { Self.heroCopy(for: readiness).subtitle }
+    private var emptyStateSubtitle: String {
+        loadStatus?.phase == .stopped ? String(localized: "Private AI, right on your Mac.") : Self.heroCopy(for: readiness).subtitle
+    }
 
-    private var downloadHint: String? { Self.heroCopy(for: readiness).hint }
+    private var downloadHint: String? { loadStatus?.phase == .stopped ? nil : Self.heroCopy(for: readiness).hint }
 
     static func heroCopy(for readiness: ModelReadiness) -> (subtitle: String, hint: String?) {
         if ComposerLoadStatus.resolve(readiness: readiness, progress: nil) != nil {
@@ -859,6 +862,7 @@ struct ChatView: View {
 
     private var composeBar: some View {
         let loadStatus = loadStatus
+        let downloadJob = downloads.job(for: alias)
         return VStack(spacing: RapidTheme.Space.sm) {
             // Exactly one notice slot. While the model is not ready the
             // readiness banner owns it — it already folds the failure
@@ -922,6 +926,22 @@ struct ChatView: View {
                 if let loadStatus {
                     ComposerLoadStatusView(
                         status: loadStatus,
+                        downloadActionTitle: ComposerLoadStatus.ownsDownload(
+                            readiness: readiness, status: downloads.job(for: alias)?.status
+                        ) ? (loadStatus.phase == .stopped
+                             ? String(localized: "Resume download") : String(localized: "Stop download")) : nil,
+                        downloadActionEnabled: loadStatus.phase != .stopped || downloads.canRetryDownload(alias: alias),
+                        onDownloadAction: {
+                            // A late click must not stop a new attempt or
+                            // restart a task that completed since this render.
+                            guard let job = downloadJob,
+                                  downloads.job(for: job.alias)?.instanceID == job.instanceID else { return }
+                            if loadStatus.phase == .downloading, job.status == .running {
+                                downloads.cancelDownload(alias: job.alias)
+                            } else if loadStatus.phase == .stopped, job.status == .cancelled {
+                                downloads.retryDownload(alias: job.alias)
+                            }
+                        },
                         onAction: onReadinessAction,
                         onExportDiagnostics: {
                             DiagnosticsBundle.exportViaSavePanel(server: server)
@@ -944,7 +964,8 @@ struct ChatView: View {
                     conversationIdentity: viewModel.activeConversationID,
                     focusToken: composeFocusToken,
                     isStreaming: viewModel.isStreaming,
-                    placeholder: readiness.composerPlaceholder,
+                    placeholder: loadStatus?.phase == .stopped
+                        ? String(localized: "Resume the download to chat…") : readiness.composerPlaceholder,
                     onSubmit: send,
                     onCancel: { viewModel.stop() },
                     onPasteAttachments: pasteAttachmentsFromClipboard,

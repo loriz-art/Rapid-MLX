@@ -29,6 +29,7 @@ struct ComposerLoadStatus: Equatable {
     enum Phase: Equatable {
         /// Weights are moving onto disk.
         case downloading
+        case stopped
         /// On disk; the engine is starting, loading or warming up.
         case loading
         /// The start failed and needs the user.
@@ -76,8 +77,16 @@ struct ComposerLoadStatus: Equatable {
     ///     downloading or starting.
     static func resolve(
         readiness: ModelReadiness,
-        progress: ModelReadiness.ProgressSnapshot?
+        progress: ModelReadiness.ProgressSnapshot?,
+        downloadStatus: DownloadManager.Job.Status? = nil
     ) -> ComposerLoadStatus? {
+        if case .needsDownload(let alias, _) = readiness, downloadStatus == .cancelled {
+            return ComposerLoadStatus(
+                phase: .stopped, title: String(localized: "Download stopped"),
+                percentText: nil, detail: alias, etaText: nil,
+                progress: .none, action: nil
+            )
+        }
         switch readiness {
         case .downloading(let alias, _, let fraction):
             let clamped = fraction.map { min(max($0, 0), 1) }
@@ -117,6 +126,14 @@ struct ComposerLoadStatus: Equatable {
         case .engineMissing, .sharingCompute, .noModel, .needsDownload,
              .needsStart, .unknownModel, .ready:
             return nil
+        }
+    }
+
+    /// Only suppress a global row when the visible composer can control it.
+    static func ownsDownload(readiness: ModelReadiness, status: DownloadManager.Job.Status?) -> Bool {
+        switch (readiness, status) {
+        case (.downloading, .running), (.needsDownload, .cancelled): return true
+        default: return false
         }
     }
 

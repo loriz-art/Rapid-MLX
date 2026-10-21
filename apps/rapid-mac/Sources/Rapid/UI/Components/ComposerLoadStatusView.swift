@@ -13,6 +13,9 @@ import SwiftUI
 /// ``ModelReadiness``; the only thing this view decides is layout.
 struct ComposerLoadStatusView: View {
     let status: ComposerLoadStatus
+    var downloadActionTitle: String? = nil
+    var downloadActionEnabled: Bool = true
+    var onDownloadAction: () -> Void = {}
     var onAction: (ModelReadiness.Action) -> Void = { _ in }
     var onExportDiagnostics: () -> Void = {}
 
@@ -20,6 +23,14 @@ struct ComposerLoadStatusView: View {
         HStack(alignment: .center, spacing: RapidTheme.Space.sm) {
             rows
                 .frame(maxWidth: .infinity, alignment: .leading)
+            if let downloadActionTitle {
+                Button(downloadActionTitle, action: onDownloadAction)
+                    .disabled(!downloadActionEnabled)
+                    .buttonStyle(RapidSecondaryButtonStyle(height: RapidTheme.ControlHeight.small))
+                    .fixedSize()
+                    .help("Stops the download without deleting cached files. Continuing reuses available cached data.")
+                    .accessibilityIdentifier("Composer.DownloadAction")
+            }
             if status.isFailure { failureActions }
         }
         .accessibilityElement(children: .contain)
