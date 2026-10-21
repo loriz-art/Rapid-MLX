@@ -837,9 +837,23 @@ struct ChatView: View {
     /// strings the approved empty state already shipped ("Choose a model
     /// to start", "Chatting with <alias>") are preserved verbatim by
     /// ``ModelReadiness/emptyStateSubtitle``.
-    private var emptyStateSubtitle: String { readiness.emptyStateSubtitle }
+    ///
+    /// One exception, decided by the same ``ComposerLoadStatus`` the card
+    /// renders: while the composer is showing a download, a load or a
+    /// failed start, the hero steps back to a neutral line. The progress,
+    /// bytes, error and recovery live in the composer; printing them a
+    /// second time above it made the two surfaces compete. Decision states
+    /// (choose / download / start) keep their hero copy.
+    private var emptyStateSubtitle: String { Self.heroCopy(for: readiness).subtitle }
 
-    private var downloadHint: String? { readiness.emptyStateHint }
+    private var downloadHint: String? { Self.heroCopy(for: readiness).hint }
+
+    static func heroCopy(for readiness: ModelReadiness) -> (subtitle: String, hint: String?) {
+        if ComposerLoadStatus.resolve(readiness: readiness, progress: nil) != nil {
+            return (String(localized: "Private AI, right on your Mac."), nil)
+        }
+        return (readiness.emptyStateSubtitle, readiness.emptyStateHint)
+    }
 
     // MARK: - Compose bar
 
@@ -1097,17 +1111,25 @@ struct ChatView: View {
                 )
                 .id(viewModel.activeConversationID)
             }
+            // Lowest priority: free width goes to the model chip first, so a
+            // long alias uses the room that exists before it truncates, and
+            // the spacer only takes what is left over.
             Spacer(minLength: 0)
+                .layoutPriority(-1)
             if let speculativeAvailability {
                 MetricChip(
                     label: speculativeAvailability.label(),
                     level: speculativeAvailability.state == .ready ? .ok : .warning
                 )
+                .fixedSize()
                 .help(speculativeAvailability.help())
                 .accessibilityLabel(speculativeAvailability.label())
                 .accessibilityHint(speculativeAvailability.help())
                 .accessibilityIdentifier("ChatView.SpeculativeDecodingStatus")
             }
+            // The one flexible control in the row: it truncates so that
+            // every fixed control beside it — attach, instructions, unload,
+            // Send — stays inside the card at the narrowest window.
             ModelPickerBar(
                 server: server,
                 downloads: downloads,
@@ -1122,8 +1144,10 @@ struct ChatView: View {
             // serving alias without confirming anything this control can free.
             if server.residency.contains(alias) {
                 composerResidentUnloadButton(snapshot: server.residency)
+                    .fixedSize()
             }
             sendOrStopButton
+                .fixedSize()
         }
     }
 

@@ -400,9 +400,16 @@ struct ModelPickerBar: View {
     /// second, unreachable implementation of the same flow (#1588).
     private var controlRow: some View {
         HStack(spacing: RapidTheme.Space.xs) {
+            // Ideal width when there is room, narrower when there is not.
+            // This used to be `.fixedSize()`, which pinned the chip to the
+            // full alias length: a long repo-style name then pushed the
+            // whole composer past the window edge at narrow widths, taking
+            // Send with it. The label truncates (middle) instead; the full
+            // name stays in the tooltip and the accessibility value.
             modelPicker
-                .fixedSize()
+                .fixedSize(horizontal: false, vertical: true)
             infoButton
+                .fixedSize()
         }
     }
 
@@ -495,10 +502,14 @@ struct ModelPickerBar: View {
                     // which is what users disambiguate on. Tail truncation
                     // eats the quant.
                     .truncationMode(.middle)
-                Spacer(minLength: 4)
+                // A fixed gap, not a Spacer: with the chip no longer
+                // `fixedSize`, a Spacer would make it greedy and swallow
+                // the composer row's free space.
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(chevronStyle)
+                    .padding(.leading, RapidTheme.Space.xs)
+                    .fixedSize()
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, RapidTheme.Space.sm)
@@ -519,10 +530,9 @@ struct ModelPickerBar: View {
                 RoundedRectangle(cornerRadius: RapidTheme.Radius.row, style: .continuous)
                     .strokeBorder(pickerStroke, lineWidth: 1)
             )
-            // The Spacer stretches the pill across the reserved frame, but
             // SwiftUI hit-tests the label's intrinsic content unless the
-            // shape is declared — without this the empty right half of the
-            // pill looks clickable and isn't.
+            // shape is declared — without this the gaps between the glyphs
+            // and the text look clickable and aren't.
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         // `.menuStyle(.borderlessButton)` never rendered the label above:

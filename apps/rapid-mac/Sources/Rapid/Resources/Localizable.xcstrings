@@ -17192,6 +17192,16 @@
           }
         }
       }
+    },
+    "Private AI, right on your Mac." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私密的 AI，就在你的 Mac 上。"
+          }
+        }
+      }
     }
   }
 }

@@ -39,7 +39,9 @@ struct ComposerLoadStatusView: View {
                     .font(status.isFailure ? RapidFont.bodyEmphasis : RapidFont.body)
                     .foregroundStyle(status.isFailure ? Color.primary : Color.secondary)
                     .lineLimit(1)
-                    .truncationMode(.tail)
+                    // A failure title carries the alias ("Couldn't start
+                    // <alias>"); middle truncation keeps its quant suffix.
+                    .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if let percent = status.percentText {
                     Text(percent)
@@ -79,6 +81,9 @@ struct ComposerLoadStatusView: View {
         // One readable element. Not marked `.updatesFrequently`: phase
         // changes are announced once by the composer, and byte ticks must
         // not turn into a running commentary.
+        // The full, untruncated text for a pointer user; VoiceOver gets the
+        // same string as the label.
+        .help(status.accessibilityLabel)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(status.accessibilityLabel)
         // Without a role an ignore-children element surfaces as AXUnknown,

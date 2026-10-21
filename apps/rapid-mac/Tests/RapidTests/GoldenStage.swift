@@ -230,6 +230,21 @@ final class GoldenStage {
         return result.takeUnretainedValue() as? String
     }
 
+    /// Screen-space frame of a node, as an assistive client reads it — the
+    /// geometry a layout journey asserts on ("Send is inside the window").
+    func frame(of identifier: String) -> CGRect? {
+        guard let node = findNode(identifier) else { return nil }
+        let sel = NSSelectorFromString("accessibilityFrame")
+        guard node.responds(to: sel) else { return nil }
+        // NSRect-returning — same typed-IMP treatment as `press(_:)`.
+        typealias FrameIMP = @convention(c) (NSObject, Selector) -> NSRect
+        let imp = unsafeBitCast(node.method(for: sel), to: FrameIMP.self)
+        return imp(node, sel)
+    }
+
+    /// Screen-space frame of the stage's own window.
+    var windowFrame: CGRect { window.frame }
+
     // MARK: - Scrolling
 
     /// The stage's first scroll position as a 0 (top) … 1 (bottom) fraction —

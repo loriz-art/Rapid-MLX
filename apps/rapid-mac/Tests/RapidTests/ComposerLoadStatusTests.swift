@@ -285,6 +285,46 @@ struct ComposerLoadStatusTests {
         }
     }
 
+    // MARK: - Hero
+
+    /// While the composer carries the download, the load or the failure,
+    /// the hero above it says nothing about them: no progress, no bytes,
+    /// no error text — one neutral line under "Ask anything".
+    @Test("The hero steps back while the composer slot speaks")
+    func heroIsNeutralDuringComposerStates() {
+        let states: [ModelReadiness] = [
+            .downloading(alias: alias, detail: "1.7 GB / 2.9 GB · 59% · 8 MB/s · < 1 min left", fraction: 0.59),
+            .starting(alias: alias, detail: "Loading the model into memory…"),
+            .failed(alias: alias, message: "Out of memory while loading.", action: .retry(alias: alias)),
+        ]
+        let neutral = ChatView.heroCopy(for: states[0])
+        for state in states {
+            let copy = ChatView.heroCopy(for: state)
+            #expect(copy.subtitle == neutral.subtitle, "\(state)")
+            #expect(copy.hint == nil, "\(state)")
+            #expect(!copy.subtitle.contains(alias))
+            #expect(!copy.subtitle.contains("GB") && !copy.subtitle.contains("%"))
+            #expect(!copy.subtitle.contains("memory"))
+        }
+    }
+
+    @Test("Decision and ready states keep their hero copy")
+    func heroKeepsDecisionCopy() {
+        let kept: [ModelReadiness] = [
+            .noModel,
+            .needsDownload(alias: alias, sizeText: "~2.9 GB"),
+            .needsStart(alias: alias),
+            .unknownModel(alias: alias),
+            .ready(alias: alias),
+        ]
+        for state in kept {
+            let copy = ChatView.heroCopy(for: state)
+            #expect(copy.subtitle == state.emptyStateSubtitle, "\(state)")
+            #expect(copy.hint == state.emptyStateHint, "\(state)")
+        }
+        #expect(ChatView.heroCopy(for: .needsDownload(alias: alias, sizeText: "~2.9 GB")).hint != nil)
+    }
+
     // MARK: - Rail motion
 
     @Test("The indeterminate segment enters before the track and leaves after it")

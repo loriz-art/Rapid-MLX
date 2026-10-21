@@ -452,6 +452,7 @@ struct LocalizationTests {
         #expect(String(localized: "\(total) downloaded", bundle: zhBundle) == "已下载 2.9 GB")
         #expect(String(localized: "Downloading the model…", bundle: zhBundle) == "正在下载模型…")
         #expect(String(localized: "You can type while the model gets ready…", bundle: zhBundle) == "模型准备期间可以先输入…")
+        #expect(String(localized: "Private AI, right on your Mac.", bundle: zhBundle) == "私密的 AI，就在你的 Mac 上。")
         #expect(String(localized: "Archived (\(count))", bundle: zhBundle) == "已归档 (3)")
         #expect(String(localized: "\(count) models", bundle: zhBundle) == "3 个模型")
         #expect(String(localized: "Finding video models…", bundle: zhBundle) == "寻找视频模型…")
