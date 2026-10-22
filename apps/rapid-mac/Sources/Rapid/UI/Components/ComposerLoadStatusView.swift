@@ -163,7 +163,7 @@ struct ComposerProgressRail: View {
                         .frame(width: proxy.size.width * fraction)
                         .rapidAnimation(RapidMotion.standard, value: fraction)
                 case .indeterminate:
-                    indeterminateSegment(trackWidth: proxy.size.width)
+                    indeterminateSegment(trackWidth: proxy.size.width, reduceMotion: reduceMotion)
                 case .none:
                     EmptyView()
                 }
@@ -187,7 +187,7 @@ struct ComposerProgressRail: View {
     }
 
     @ViewBuilder
-    private func indeterminateSegment(trackWidth: CGFloat) -> some View {
+    func indeterminateSegment(trackWidth: CGFloat, reduceMotion: Bool) -> some View {
         let segment = max(1, trackWidth * Self.segmentShare)
         if RapidMotion.shouldPulse(isAnimating: true, reduceMotion: reduceMotion) {
             // The clock exists only while this branch does: the moment the

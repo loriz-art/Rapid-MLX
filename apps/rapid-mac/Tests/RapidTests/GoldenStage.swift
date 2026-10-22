@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+@testable import Rapid
 
 /// In-process stage for golden-flow tests: mounts a real SwiftUI view in a
 /// window the user never sees and drives it through the same accessibility
@@ -219,6 +220,23 @@ final class GoldenStage {
         )
         if let escape {
             target.sendEvent(escape)
+        }
+        Self.turnRunLoop()
+    }
+
+    /// Deliver Return through the mounted composer's real text delegate.
+    /// This reaches the readiness gate even when the Send button is disabled.
+    func submitComposer() throws {
+        func findEditor(in view: NSView) -> NSTextView? {
+            if let editor = view as? NSTextView,
+               editor.accessibilityIdentifier() == AutosizingTextView.composeAccessibilityIdentifier {
+                return editor
+            }
+            return view.subviews.lazy.compactMap { findEditor(in: $0) }.first
+        }
+        guard let editor = findEditor(in: host),
+              editor.delegate?.textView?(editor, doCommandBy: #selector(NSResponder.insertNewline(_:))) == true else {
+            throw StageError(description: "submitComposer: composer did not handle Return")
         }
         Self.turnRunLoop()
     }

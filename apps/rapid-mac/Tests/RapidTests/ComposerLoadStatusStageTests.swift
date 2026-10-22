@@ -1,3 +1,4 @@
+import AppKit
 import Observation
 import SwiftUI
 import Testing
@@ -43,6 +44,109 @@ struct ComposerLoadStatusStageTests {
 
     private func node(_ stage: GoldenStage, _ id: String) -> GoldenStage.Node? {
         stage.tree().first { $0.id == id }
+    }
+
+    @Test("A minimal status keeps its title accessible without inventing detail or progress")
+    func minimalStatus() async throws {
+        let status = ComposerLoadStatus(
+            phase: .stopped, title: "Download stopped", percentText: nil,
+            detail: nil, etaText: nil, progress: .none, action: nil
+        )
+        let stage = GoldenStage(VStack {
+            ComposerLoadStatusView(status: status)
+            ComposerProgressRail(progress: .none, label: status.title)
+        })
+        try await stage.waitForIdentifier("Composer.LoadStatus")
+        #expect(stage.treeText().contains("Download stopped"))
+        #expect(!stage.identifiers().contains("Composer.DownloadAction"))
+        #expect(!stage.tree().contains { $0.role == "AXProgressIndicator" || $0.role == "AXBusyIndicator" })
+    }
+
+    @Test("Reduce Motion keeps the indeterminate segment mounted without a timeline")
+    func reducedMotionSegment() async throws {
+        let rail = ComposerProgressRail(progress: .indeterminate, label: "Loading")
+        let stage = GoldenStage(
+            rail.indeterminateSegment(trackWidth: 200, reduceMotion: true)
+                .accessibilityIdentifier("ReducedSegment")
+        )
+        try await stage.waitForIdentifier("ReducedSegment")
+        #expect(try #require(stage.frame(of: "ReducedSegment")).width == 60)
+    }
+
+    @Test("Blocked Return retains the draft through attention and repeated attempts")
+    func blockedReturn() async throws {
+        let lifecycle = Lifecycle()
+        lifecycle.readiness = .starting(alias: Self.alias, detail: nil)
+        let chat = ChatViewModel(persistsConversations: false)
+        let server = ServerManager(testingState: .starting(alias: Self.alias))
+        let stage = GoldenStage(Host(lifecycle: lifecycle, chat: chat, server: server))
+        try await stage.waitForIdentifier(Self.composeID)
+        try stage.setValue("Keep my unsent text", for: Self.composeID)
+        try stage.submitComposer()
+        try await Task.sleep(for: .milliseconds(100))
+        try stage.submitComposer()
+        try await Task.sleep(for: .milliseconds(1500))
+        #expect(chat.composerDraft == "Keep my unsent text")
+        #expect(chat.messages.isEmpty)
+        #expect(stage.value(of: Self.composeID) == "Keep my unsent text")
+        #expect(stage.identifiers().contains("Composer.LoadStatus"))
+    }
+
+    @Test("The acceleration badge fits beside the composer status")
+    func accelerationBadge() async throws {
+        let server = ServerManager(testingState: .ready(alias: Self.alias))
+        server.applyActiveModelProfile(ServerModelProfile(
+            id: Self.alias,
+            speculativeDecoding: .init(
+                configured: true, method: "mtp", runtimeState: .active,
+                requestFallbackFeatures: []
+            )
+        ), forAlias: Self.alias)
+        let stage = GoldenStage(ChatView(
+            viewModel: ChatViewModel(persistsConversations: false), server: server,
+            alias: .constant(Self.alias), readiness: .starting(alias: Self.alias, detail: nil)
+        ).environment(server).environment(DownloadManager()).environment(QuickstartCoordinator()))
+        try await stage.waitForIdentifier("ChatView.SpeculativeDecodingStatus")
+        #expect(stage.treeText().contains("MTP ready"))
+        let badge = try #require(stage.frame(of: "ChatView.SpeculativeDecodingStatus"))
+        let send = try #require(stage.frame(of: "ChatView.SendOrStopButton"))
+        #expect(badge.maxX <= send.minX)
+    }
+
+    @Test("The development capture matrix mounts the composer at every width and appearance")
+    func snapshotMatrix() async throws {
+        let server = ServerManager(testingState: .idle)
+        var captures: [(AnyView, CGSize, NSAppearance.Name, String)] = []
+        DevSnapshot.renderComposerSnapshots(
+            chat: ChatViewModel(persistsConversations: false), server: server,
+            downloads: DownloadManager(), quickstart: QuickstartCoordinator(), directory: "review"
+        ) { captures.append(($0, $1, $2, $3)) }
+        #expect(captures.count == 30)
+        #expect(Set(captures.map { $0.3 }).count == 30)
+        #expect(Set(captures.map { $0.1.width }) == [520, 800, 1240])
+        #expect(Set(captures.map { $0.2 }) == [.aqua, .darkAqua])
+        for (view, size, appearance, path) in captures {
+            let stage = GoldenStage(view.environment(\.colorScheme, appearance == .darkAqua ? .dark : .light), size: size)
+            try await stage.waitForIdentifier("Composer.LoadStatus")
+            #expect(size.height == 640)
+            #expect(stage.identifiers().contains(AutosizingTextView.composeAccessibilityIdentifier))
+            let text = stage.treeText()
+            if path.contains("downloading-unknown-total") {
+                #expect(text.contains("2.9 GB"))
+                #expect(!text.contains("%"))
+            } else if path.contains("downloading-") {
+                #expect(text.contains("59%"))
+            } else if path.contains("loading-") {
+                #expect(text.contains("Loading the model into memory"))
+                #expect(!text.contains("100%"))
+            } else if path.contains("failed-") {
+                #expect(stage.identifiers().contains("Readiness.Action"))
+                #expect(text.contains("exited while loading"))
+            } else {
+                #expect(path.contains("long-alias"))
+                #expect(text.contains(ComposerLayoutBoundsTests.longAlias))
+            }
+        }
     }
 
     @Test("Download, load, failure and ready all render in the composer and keep the draft")

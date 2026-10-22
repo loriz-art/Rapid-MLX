@@ -73,8 +73,8 @@ struct ComposerDownloadControlsTests {
         }
         #expect(!stopped.identifiers().contains("Composer.LoadProgress"))
     }
-    @Test("Stop and resume use the same manager, preserving job metadata and waiting for cleanup")
-    func actualProcessStopAndResume() async throws {
+    @Test("Stop and resume use the same manager, preserving job metadata and waiting for cleanup", arguments: [false, true])
+    func actualProcessStopAndResume(useGlobalResume: Bool) async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -103,9 +103,12 @@ struct ComposerDownloadControlsTests {
             try await Task.sleep(for: .milliseconds(25))
         }
         #expect(downloads.canRetryDownload(alias: alias))
-        let stopped = stage(.needsDownload(alias: alias, sizeText: nil))
-        try await stopped.waitForIdentifier("Composer.DownloadAction")
-        try stopped.press("Composer.DownloadAction")
+        let stopped = useGlobalResume
+            ? GoldenStage(DownloadStrip(downloads: downloads))
+            : stage(.needsDownload(alias: alias, sizeText: nil))
+        let resumeID = useGlobalResume ? "DownloadStrip.Resume.\(alias)" : "Composer.DownloadAction"
+        try await stopped.waitForIdentifier(resumeID)
+        try stopped.press(resumeID)
         let resumed = try #require(downloads.job(for: alias))
         #expect(resumed.instanceID != first.instanceID)
         #expect(resumed.status == .running)

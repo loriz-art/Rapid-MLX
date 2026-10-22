@@ -248,6 +248,18 @@ struct ComposerLoadStatusTests {
 
     // MARK: - Draft and copy
 
+    @Test("Leaving a working phase for a decision state stays silent")
+    func decisionAfterWaitIsSilent() {
+        #expect(ComposerLoadStatus.announcement(
+            from: .starting(alias: alias, detail: nil),
+            to: .needsStart(alias: alias)
+        ) == nil)
+        #expect(ComposerLoadStatus.announcement(
+            from: .downloading(alias: alias, detail: nil, fraction: nil),
+            to: .needsDownload(alias: alias, sizeText: nil)
+        ) == nil)
+    }
+
     /// Readiness never writes the draft. A gated submit during a load keeps
     /// every character, and the same draft goes out once the model is ready.
     @Test("The draft survives loading and is sent unchanged when ready")

@@ -14,6 +14,92 @@ import AppKit
 /// immediately and nothing here runs in normal use. No product behaviour
 /// change, no version bump.
 enum DevSnapshot {
+    /// The composer review matrix shared by the capture session and native
+    /// regression tests. Rendering is supplied so tests can mount the exact
+    /// same views without running the full application snapshot session.
+    @MainActor
+    static func renderComposerSnapshots(
+        chat: ChatViewModel,
+        server: ServerManager,
+        downloads: DownloadManager,
+        quickstart: QuickstartCoordinator,
+        directory dir: String,
+        render: (AnyView, CGSize, NSAppearance.Name, String) -> Void
+    ) {
+        let ui2Appearances: [(NSAppearance.Name, String)] = [(.aqua, "light"), (.darkAqua, "dark")]
+        // The composer's load status, driven directly by the states that
+        // open it, on the real chat surface at each detail-pane width. A
+        // live ``ContentView`` can only show whichever state the harness is
+        // actually in, and staging a multi-gigabyte download is not
+        // something a capture run can do — so readiness and the progress
+        // snapshot are injected.
+        let gib: Int64 = 1 << 30
+        func composerProof(
+            _ readiness: ModelReadiness,
+            progress: ModelReadiness.ProgressSnapshot?,
+            width: CGFloat
+        ) -> AnyView {
+            AnyView(
+                ChatView(
+                    viewModel: chat,
+                    server: server,
+                    alias: .constant(readiness.alias ?? ""),
+                    readiness: readiness,
+                    loadProgress: progress
+                )
+                .environment(downloads)
+                .environment(quickstart)
+                .frame(width: width, height: 640)
+                .background(RapidTheme.surfaceCanvas)
+                .tint(RapidTheme.brandAmber)
+            )
+        }
+        let composerStates: [(String, ModelReadiness, ModelReadiness.ProgressSnapshot?)] = [
+            ("downloading", .downloading(alias: "qwen3.5-4b-4bit", detail: nil, fraction: 0.59),
+             .init(activity: .downloading, fraction: 0.59,
+                   bytesDownloaded: gib * 17 / 10, totalBytes: gib * 29 / 10,
+                   etaText: "< 1 min left")),
+            // Bytes but no total: the indeterminate download, which must
+            // say what has arrived without inventing a percentage.
+            ("downloading-unknown-total", .downloading(alias: "qwen3.5-4b-4bit", detail: nil, fraction: nil),
+             .init(activity: .downloading, bytesDownloaded: gib * 29 / 10)),
+            // A cached start: the monitor reports ~1.0, which must NOT
+            // surface as a percentage while the model loads.
+            ("loading", .starting(alias: "qwen3.5-4b-4bit", detail: nil),
+             .init(activity: .loading, fraction: 1.0,
+                   bytesDownloaded: gib * 29 / 10, totalBytes: gib * 29 / 10)),
+            ("failed", .failed(
+                alias: "qwen3.5-4b-4bit",
+                message: "The model process exited while loading. Retry, or open the startup log for details.",
+                action: .retry(alias: "qwen3.5-4b-4bit")
+            ), nil),
+            ("long-alias", .downloading(
+                alias: "mlx-community/Qwen3.5-Coder-30B-A3B-Instruct-Distill-4bit-dwq-v2",
+                detail: nil, fraction: 0.12
+            ), .init(activity: .downloading, fraction: 0.12,
+                     bytesDownloaded: gib * 2, totalBytes: gib * 16,
+                     etaText: "1 h 4 min left")),
+        ]
+        let ui2DetailWidths: [(window: CGFloat, detail: CGFloat)] = [
+            (1440, RapidTheme.Layout.Breakpoint.wide),
+            (1000, RapidTheme.Layout.Breakpoint.mid),
+            (720, RapidTheme.Layout.Breakpoint.floor),
+        ]
+        for (label, state, progress) in composerStates {
+            for widths in ui2DetailWidths {
+                let size = CGSize(width: widths.detail, height: 640)
+                for (appearance, mode) in ui2Appearances {
+                    render(
+                        composerProof(state, progress: progress, width: widths.detail), size,
+                        appearance,
+                        "\(dir)/ui2-composer-\(label)-\(Int(widths.window))-\(mode).png"
+                    )
+                }
+            }
+        }
+
+    }
+
     @MainActor
     static func runIfRequested(
         server: ServerManager,
@@ -795,75 +881,11 @@ enum DevSnapshot {
         }
         imageGen.aspect = .square
 
-        // The composer's load status, driven directly by the states that
-        // open it, on the real chat surface at each detail-pane width. A
-        // live ``ContentView`` can only show whichever state the harness is
-        // actually in, and staging a multi-gigabyte download is not
-        // something a capture run can do — so readiness and the progress
-        // snapshot are injected.
-        let gib: Int64 = 1 << 30
-        func composerProof(
-            _ readiness: ModelReadiness,
-            progress: ModelReadiness.ProgressSnapshot?,
-            width: CGFloat
-        ) -> AnyView {
-            AnyView(
-                ChatView(
-                    viewModel: chat,
-                    server: server,
-                    alias: .constant(readiness.alias ?? ""),
-                    readiness: readiness,
-                    loadProgress: progress
-                )
-                .environment(downloads)
-                .environment(quickstart)
-                .frame(width: width, height: 640)
-                .background(RapidTheme.surfaceCanvas)
-                .tint(RapidTheme.brandAmber)
-            )
-        }
-        let composerStates: [(String, ModelReadiness, ModelReadiness.ProgressSnapshot?)] = [
-            ("downloading", .downloading(alias: "qwen3.5-4b-4bit", detail: nil, fraction: 0.59),
-             .init(activity: .downloading, fraction: 0.59,
-                   bytesDownloaded: gib * 17 / 10, totalBytes: gib * 29 / 10,
-                   etaText: "< 1 min left")),
-            // Bytes but no total: the indeterminate download, which must
-            // say what has arrived without inventing a percentage.
-            ("downloading-unknown-total", .downloading(alias: "qwen3.5-4b-4bit", detail: nil, fraction: nil),
-             .init(activity: .downloading, bytesDownloaded: gib * 29 / 10)),
-            // A cached start: the monitor reports ~1.0, which must NOT
-            // surface as a percentage while the model loads.
-            ("loading", .starting(alias: "qwen3.5-4b-4bit", detail: nil),
-             .init(activity: .loading, fraction: 1.0,
-                   bytesDownloaded: gib * 29 / 10, totalBytes: gib * 29 / 10)),
-            ("failed", .failed(
-                alias: "qwen3.5-4b-4bit",
-                message: "The model process exited while loading. Retry, or open the startup log for details.",
-                action: .retry(alias: "qwen3.5-4b-4bit")
-            ), nil),
-            ("long-alias", .downloading(
-                alias: "mlx-community/Qwen3.5-Coder-30B-A3B-Instruct-Distill-4bit-dwq-v2",
-                detail: nil, fraction: 0.12
-            ), .init(activity: .downloading, fraction: 0.12,
-                     bytesDownloaded: gib * 2, totalBytes: gib * 16,
-                     etaText: "1 h 4 min left")),
-        ]
-        let ui2DetailWidths: [(window: CGFloat, detail: CGFloat)] = [
-            (1440, RapidTheme.Layout.Breakpoint.wide),
-            (1000, RapidTheme.Layout.Breakpoint.mid),
-            (720, RapidTheme.Layout.Breakpoint.floor),
-        ]
-        for (label, state, progress) in composerStates {
-            for widths in ui2DetailWidths {
-                let size = CGSize(width: widths.detail, height: 640)
-                for (appearance, mode) in ui2Appearances {
-                    renderHosted(
-                        composerProof(state, progress: progress, width: widths.detail), size: size,
-                        appearance: appearance,
-                        to: "\(dir)/ui2-composer-\(label)-\(Int(widths.window))-\(mode).png"
-                    )
-                }
-            }
+        renderComposerSnapshots(
+            chat: chat, server: server, downloads: downloads,
+            quickstart: quickstart, directory: dir
+        ) { view, size, appearance, path in
+            renderHosted(view, size: size, appearance: appearance, to: path)
         }
 
         // NOTE ON REDUCE MOTION. There is deliberately no capture for it
