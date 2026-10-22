@@ -241,6 +241,10 @@ struct ComposerLoadStatusTests {
             readiness: .needsDownload(alias: alias, sizeText: nil), downloadStatus: .running)
         let stopped = ComposerLoadStatus.AnnouncementState(
             readiness: decision.readiness, downloadStatus: .cancelled)
+        let cancelledFirst = ComposerLoadStatus.AnnouncementState(
+            readiness: running.readiness, downloadStatus: .cancelled)
+        #expect(ComposerLoadStatus.announcement(from: running, to: cancelledFirst) == "Download stopped")
+        #expect(ComposerLoadStatus.announcement(from: cancelledFirst, to: stopped) == nil)
         #expect(ComposerLoadStatus.announcement(from: running, to: stopped) == "Download stopped")
         #expect(ComposerLoadStatus.announcement(from: running, to: decision) == nil)
         #expect(ComposerLoadStatus.announcement(from: decision, to: stopped) == "Download stopped")

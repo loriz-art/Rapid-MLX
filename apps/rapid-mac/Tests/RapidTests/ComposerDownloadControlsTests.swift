@@ -13,6 +13,7 @@ struct ComposerDownloadControlsTests {
     func ownership() {
         let running = ModelReadiness.downloading(alias: alias, detail: nil, fraction: 0.3)
         #expect(ComposerLoadStatus.ownsDownload(readiness: running, status: .running))
+        #expect(ComposerLoadStatus.ownsDownload(readiness: running, status: .cancelled))
         #expect(!ComposerLoadStatus.ownsDownload(readiness: running, status: nil))
         #expect(!ComposerLoadStatus.ownsDownload(readiness: .starting(alias: alias, detail: nil), status: .running))
         #expect(!ComposerLoadStatus.ownsDownload(readiness: .ready(alias: alias), status: .completed))
@@ -61,6 +62,15 @@ struct ComposerDownloadControlsTests {
         let action = try #require(running.frame(of: "Composer.DownloadAction"))
         #expect(action.minX >= running.windowFrame.minX && action.maxX <= running.windowFrame.maxX)
         downloads._testingFinish(alias: alias, status: 15, reason: .uncaughtSignal, wasCancelling: true)
+        // The job cancels before the parent supplies fresh readiness.
+        try await running.wait(for: "stopped copy before readiness catches up") {
+            running.treeText().contains("Download stopped")
+                && running.treeText().contains("Resume download")
+        }
+        #expect(!running.identifiers().contains("Composer.LoadProgress"))
+        #expect(!running.treeText().contains("Stop download"))
+        #expect(!running.treeText().contains("Downloading the model"))
+        #expect(running.value(of: AutosizingTextView.composeAccessibilityIdentifier) == "Keep this draft")
         let stopped = GoldenStage(surface(.needsDownload(alias: alias, sizeText: nil)), size: CGSize(width: 520, height: 640))
         try await stopped.waitForIdentifier("Composer.DownloadAction")
         #expect(stopped.treeText().contains("Resume download"))

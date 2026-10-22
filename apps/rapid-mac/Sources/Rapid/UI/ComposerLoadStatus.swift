@@ -80,12 +80,11 @@ struct ComposerLoadStatus: Equatable {
         progress: ModelReadiness.ProgressSnapshot?,
         downloadStatus: DownloadManager.Job.Status? = nil
     ) -> ComposerLoadStatus? {
-        if case .needsDownload(let alias, _) = readiness, downloadStatus == .cancelled {
-            return ComposerLoadStatus(
-                phase: .stopped, title: String(localized: "Download stopped"),
-                percentText: nil, detail: alias, etaText: nil,
-                progress: .none, action: nil
-            )
+        if downloadStatus == .cancelled {
+            switch readiness {
+            case .needsDownload, .downloading: return stoppedStatus(alias: readiness.alias)
+            default: break
+            }
         }
         switch readiness {
         case .downloading(let alias, _, let fraction):
@@ -129,10 +128,18 @@ struct ComposerLoadStatus: Equatable {
         }
     }
 
+    private static func stoppedStatus(alias: String?) -> ComposerLoadStatus {
+        ComposerLoadStatus(
+            phase: .stopped, title: String(localized: "Download stopped"),
+            percentText: nil, detail: alias, etaText: nil,
+            progress: .none, action: nil
+        )
+    }
+
     /// Only suppress a global row when the visible composer can control it.
     static func ownsDownload(readiness: ModelReadiness, status: DownloadManager.Job.Status?) -> Bool {
         switch (readiness, status) {
-        case (.downloading, .running), (.needsDownload, .cancelled): return true
+        case (.downloading, .running), (.downloading, .cancelled), (.needsDownload, .cancelled): return true
         default: return false
         }
     }
@@ -230,9 +237,13 @@ struct ComposerLoadStatus: Equatable {
         case other
 
         init(_ readiness: ModelReadiness, downloadStatus: DownloadManager.Job.Status?) {
-            if case .needsDownload(let alias, _) = readiness, downloadStatus == .cancelled {
-                self = .stopped(alias: alias)
-                return
+            if downloadStatus == .cancelled {
+                switch readiness {
+                case .needsDownload(let alias, _), .downloading(let alias, _, _):
+                    self = .stopped(alias: alias)
+                    return
+                default: break
+                }
             }
             switch readiness {
             case .downloading(let a, _, _): self = .downloading(alias: a)
