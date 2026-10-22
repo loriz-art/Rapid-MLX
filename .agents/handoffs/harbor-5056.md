@@ -16,7 +16,10 @@ Branch: `pixel/composer-model-loading`; PR: #5056.
   reduced-motion segment. The capture matrix and segment renderer now have
   internal test seams; the application renders the same views and motion policy.
 - 307 targeted Swift tests passed in 27 suites with coverage enabled.
-- LLVM/LCOV intersection with added Swift source lines measures 528/545 (96.88%).
+- Verified the validator's tooltip finding against the source: Resume inherited
+  Stop help text. Added localized Resume help and mounted accessibility
+  assertions for both states; the 307-test rerun passed.
+- LLVM/LCOV intersection with added Swift source lines measures 530/547 (96.89%).
   No exclusions or waiver were applied. No existing Swift coverage exclusion
   convention was found. All 17 remaining mapped lines are listed below.
 

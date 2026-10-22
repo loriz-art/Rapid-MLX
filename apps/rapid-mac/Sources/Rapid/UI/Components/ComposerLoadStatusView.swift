@@ -28,7 +28,9 @@ struct ComposerLoadStatusView: View {
                     .disabled(!downloadActionEnabled)
                     .buttonStyle(RapidSecondaryButtonStyle(height: RapidTheme.ControlHeight.small))
                     .fixedSize()
-                    .help("Stops the download without deleting cached files. Continuing reuses available cached data.")
+                    .help(status.phase == .stopped
+                        ? String(localized: "Resumes the download using available cached data.")
+                        : String(localized: "Stops the download without deleting cached files. Continuing reuses available cached data."))
                     .accessibilityIdentifier("Composer.DownloadAction")
             }
             if status.isFailure { failureActions }

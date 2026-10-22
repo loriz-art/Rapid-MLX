@@ -2,6 +2,16 @@
   "sourceLanguage" : "en",
   "version" : "1.0",
   "strings" : {
+    "Resumes the download using available cached data." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用可用的缓存数据继续下载。"
+          }
+        }
+      }
+    },
     "Resume the download to chat…" : {
       "localizations" : {
         "zh-Hans" : {

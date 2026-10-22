@@ -248,6 +248,13 @@ final class GoldenStage {
         return result.takeUnretainedValue() as? String
     }
 
+    func help(of identifier: String) -> String? {
+        guard let node = findNode(identifier) else { return nil }
+        let selector = NSSelectorFromString("accessibilityHelp")
+        guard node.responds(to: selector), let result = node.perform(selector) else { return nil }
+        return result.takeUnretainedValue() as? String
+    }
+
     /// Screen-space frame of a node, as an assistive client reads it — the
     /// geometry a layout journey asserts on ("Send is inside the window").
     func frame(of identifier: String) -> CGRect? {
