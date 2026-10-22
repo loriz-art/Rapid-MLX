@@ -89,7 +89,7 @@ struct ComposerLoadStatus: Equatable {
         }
         switch readiness {
         case .downloading(let alias, _, let fraction):
-            let clamped = fraction.map { min(max($0, 0), 1) }
+            let clamped = fraction.flatMap { $0.isFinite ? min(max($0, 0), 1) : nil }
             return ComposerLoadStatus(
                 phase: .downloading,
                 title: String(localized: "Downloading the model…"),
@@ -184,7 +184,7 @@ struct ComposerLoadStatus: Equatable {
     /// Whole percent, clamped — the byte monitor can overshoot on the final
     /// chunk, and "101%" would contradict the file it just finished.
     static func percentText(for fraction: Double?) -> String? {
-        guard let fraction else { return nil }
+        guard let fraction, fraction.isFinite else { return nil }
         return "\(Int((min(max(fraction, 0), 1) * 100).rounded()))%"
     }
 

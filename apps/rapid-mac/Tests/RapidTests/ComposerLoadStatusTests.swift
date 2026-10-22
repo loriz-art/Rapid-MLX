@@ -92,6 +92,15 @@ struct ComposerLoadStatusTests {
         #expect(ComposerLoadStatus.percentText(for: -0.2) == "0%")
     }
 
+    @Test("Non-finite download progress stays indeterminate", arguments: [Double.nan, .infinity, -.infinity])
+    func nonFiniteProgress(fraction: Double) throws {
+        #expect(ComposerLoadStatus.percentText(for: fraction) == nil)
+        let status = try #require(ComposerLoadStatus.resolve(
+            readiness: .downloading(alias: alias, detail: nil, fraction: fraction), progress: nil))
+        #expect(status.progress == .indeterminate)
+        #expect(status.percentText == nil)
+    }
+
     @Test("A download-only job shows progress while the server stays idle")
     func downloadOnlyJob() throws {
         let progress = ModelReadiness.ProgressSnapshot(
