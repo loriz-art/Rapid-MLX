@@ -145,8 +145,23 @@ struct ComposerLoadStatus: Equatable {
     /// ETA refresh and a loading → warming-up step are all the same moment
     /// to a listener and stay silent; the progress indicator's own value is
     /// there for anyone who asks.
-    static func announcement(from old: ModelReadiness, to new: ModelReadiness) -> String? {
-        let before = Moment(old), after = Moment(new)
+    struct AnnouncementState: Equatable {
+        var readiness: ModelReadiness
+        var downloadStatus: DownloadManager.Job.Status?
+    }
+
+    static func announcement(from old: AnnouncementState, to new: AnnouncementState) -> String? {
+        announcement(from: old.readiness, to: new.readiness,
+                     oldDownloadStatus: old.downloadStatus, newDownloadStatus: new.downloadStatus)
+    }
+
+    static func announcement(
+        from old: ModelReadiness, to new: ModelReadiness,
+        oldDownloadStatus: DownloadManager.Job.Status? = nil,
+        newDownloadStatus: DownloadManager.Job.Status? = nil
+    ) -> String? {
+        let before = Moment(old, downloadStatus: oldDownloadStatus)
+        let after = Moment(new, downloadStatus: newDownloadStatus)
         guard before != after else { return nil }
         switch after {
         case .downloading, .loading:
@@ -157,6 +172,8 @@ struct ComposerLoadStatus: Equatable {
             return before.isWorking ? new.headline : nil
         case .failed:
             return new.accessibilityLabel
+        case .stopped:
+            return String(localized: "Download stopped")
         case .other:
             return nil
         }
@@ -206,12 +223,17 @@ struct ComposerLoadStatus: Equatable {
     /// values compare equal exactly when nothing worth announcing changed.
     private enum Moment: Equatable {
         case downloading(alias: String)
+        case stopped(alias: String)
         case loading(alias: String)
         case ready(alias: String)
         case failed(String)
         case other
 
-        init(_ readiness: ModelReadiness) {
+        init(_ readiness: ModelReadiness, downloadStatus: DownloadManager.Job.Status?) {
+            if case .needsDownload(let alias, _) = readiness, downloadStatus == .cancelled {
+                self = .stopped(alias: alias)
+                return
+            }
             switch readiness {
             case .downloading(let a, _, _): self = .downloading(alias: a)
             case .starting(let a, _):       self = .loading(alias: a)

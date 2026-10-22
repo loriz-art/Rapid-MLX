@@ -224,6 +224,21 @@ struct ComposerLoadStatusTests {
         #expect(ComposerLoadStatus.announcement(from: starting, to: ready) == ready.headline)
     }
 
+    @Test("Stop is announced once even when cancellation status arrives after readiness")
+    func stopAnnounced() {
+        let running = ComposerLoadStatus.AnnouncementState(
+            readiness: .downloading(alias: alias, detail: nil, fraction: 0.5), downloadStatus: .running)
+        let decision = ComposerLoadStatus.AnnouncementState(
+            readiness: .needsDownload(alias: alias, sizeText: nil), downloadStatus: .running)
+        let stopped = ComposerLoadStatus.AnnouncementState(
+            readiness: decision.readiness, downloadStatus: .cancelled)
+        #expect(ComposerLoadStatus.announcement(from: running, to: stopped) == "Download stopped")
+        #expect(ComposerLoadStatus.announcement(from: running, to: decision) == nil)
+        #expect(ComposerLoadStatus.announcement(from: decision, to: stopped) == "Download stopped")
+        #expect(ComposerLoadStatus.announcement(from: stopped, to: stopped) == nil)
+        #expect(ComposerLoadStatus.announcement(from: stopped, to: running) == running.readiness.headline)
+    }
+
     @Test("Selecting a model that is already serving is not announced as ready")
     func readyWithoutWaitIsSilent() {
         #expect(ComposerLoadStatus.announcement(

@@ -39,7 +39,13 @@ enum DevSnapshot {
             progress: ModelReadiness.ProgressSnapshot?,
             width: CGFloat
         ) -> AnyView {
-            AnyView(
+            // Isolate each capture so deferred rendering retains its matching
+            // process-free job without altering the application's live jobs.
+            let captureDownloads = DownloadManager()
+            if case .downloading(let alias, _, _) = readiness {
+                _ = captureDownloads._testingSeedJob(alias: alias)
+            }
+            return AnyView(
                 ChatView(
                     viewModel: chat,
                     server: server,
@@ -47,7 +53,7 @@ enum DevSnapshot {
                     readiness: readiness,
                     loadProgress: progress
                 )
-                .environment(downloads)
+                .environment(captureDownloads)
                 .environment(quickstart)
                 .frame(width: width, height: 640)
                 .background(RapidTheme.surfaceCanvas)

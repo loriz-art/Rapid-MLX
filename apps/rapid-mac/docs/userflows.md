@@ -644,7 +644,7 @@ Prompt.Confirm,Prompt.Cancel}`, `Sidebar.DeleteFolder.{Confirm,Keep}`.
 `ModelPickerBar.Delete.{Confirm,Cancel}`. Readiness:
 `UI/ReadinessBanner.swift` `Readiness.Action`; `UI/Components/ComposerLoadStatusView.swift`
 `Composer.LoadStatus`, `Composer.LoadProgress`. Downloads: `UI/DownloadStrip.swift`
-`DownloadStrip.{Cancel,Dismiss}.<alias>`.
+`DownloadStrip.{Cancel,Resume,Dismiss}.<alias>`.
 
 **Quickstart / onboarding — `UI/QuickstartView.swift`:**
 `Quickstart.{GetStarted,Skip,BrowseAll,Ready.StartChatting,ResumeNotice,

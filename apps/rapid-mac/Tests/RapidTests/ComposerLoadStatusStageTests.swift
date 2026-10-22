@@ -131,6 +131,14 @@ struct ComposerLoadStatusStageTests {
             #expect(size.height == 640)
             #expect(stage.identifiers().contains(AutosizingTextView.composeAccessibilityIdentifier))
             let text = stage.treeText()
+            if path.contains("downloading") || path.contains("long-alias") {
+                let action = try #require(node(stage, "Composer.DownloadAction"))
+                #expect(action.text == "Stop download")
+                let frame = try #require(stage.frame(of: "Composer.DownloadAction"))
+                #expect(frame.minX >= stage.windowFrame.minX && frame.maxX <= stage.windowFrame.maxX)
+            } else {
+                #expect(!stage.identifiers().contains("Composer.DownloadAction"))
+            }
             if path.contains("downloading-unknown-total") {
                 #expect(text.contains("2.9 GB"))
                 #expect(!text.contains("%"))

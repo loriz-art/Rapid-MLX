@@ -366,7 +366,9 @@ struct ChatView: View {
         .onChange(of: readiness, initial: true) { _, _ in resolveStartAndSend() }
         // Phase changes only — never a percentage tick. See
         // ``ComposerLoadStatus/announcement(from:to:)``.
-        .onChange(of: readiness) { old, new in
+        .onChange(of: ComposerLoadStatus.AnnouncementState(
+            readiness: readiness, downloadStatus: downloads.job(for: alias)?.status
+        )) { old, new in
             if let text = ComposerLoadStatus.announcement(from: old, to: new) {
                 VoiceOverAnnouncer.announce(text)
             }
